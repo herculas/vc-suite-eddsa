@@ -1,6 +1,5 @@
 import { Buffer } from "node:buffer"
 import { createPrivateKey, createPublicKey, randomBytes } from "node:crypto"
-import { promisify } from "node:util"
 
 const DER_PRI_KEY_PREFIX = Buffer.from("302e020100300506032b657004220420", "hex")
 const DER_PUB_KEY_PREFIX = Buffer.from("302a300506032b6570032100", "hex")
@@ -10,12 +9,11 @@ const DER_PUB_KEY_PREFIX = Buffer.from("302a300506032b6570032100", "hex")
  *
  * @param {Uint8Array} seed A 32-byte seed.
  *
- * @returns {Promise<{ publicKey: Buffer; privateKey: Buffer }>} The generated keypair.
+ * @returns {{ publicKey: Buffer; privateKey: Buffer }} The generated keypair.
  */
-export async function generateRawKeypair(seed?: Uint8Array): Promise<{ publicKey: Buffer; privateKey: Buffer }> {
+export function generateRawKeypair(seed?: Uint8Array): { publicKey: Buffer; privateKey: Buffer } {
   if (!seed) {
-    const randomBytesAsync = promisify(randomBytes)
-    seed = await randomBytesAsync(32)
+    seed = randomBytes(32)
   }
   const privateKey = createPrivateKey({
     key: _seedDerEncode(seed),
