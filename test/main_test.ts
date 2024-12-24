@@ -1,14 +1,15 @@
-import { generateRawKeypair } from "../src/key/core.ts"
-import { ED25519Keypair } from "../src/key/keypair.ts"
+import { generateRawKeypair } from "../src/keypair/core.ts"
+import { Ed25519Keypair } from "../src/keypair/keypair.ts"
 
-Deno.test("string prefix", () => {
-  const a = generateRawKeypair()
+Deno.test("key gen", async () => {
+  const a = await generateRawKeypair()
   console.log(a)
 })
 
-Deno.test("key gen", () => {
-  const keypair = new ED25519Keypair()
-  keypair.generate()
-  const a = keypair.export(true, false)
-  console.log(a)
+Deno.test("key gen 2", async () => {
+  const keypair = new Ed25519Keypair()
+  await keypair.generate()
+
+  console.log(keypair.privateKeyMultibase)
+  console.log(keypair.publicKeyMultibase)
 })
