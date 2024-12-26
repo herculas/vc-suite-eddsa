@@ -1,9 +1,19 @@
-import { concatenate, type DIDURL, Keypair, type URL, type VerificationResult } from "@crumble-jon/ld-crypto-syntax"
+import {
+  concatenate,
+  type DIDURL,
+  Keypair,
+  type KeypairExportOptions,
+  toW3CTimestampString,
+  type URL,
+  type VerificationResult,
+} from "@crumble-jon/ld-crypto-syntax"
 
+import * as CONTEXT_URL from "../context/constants.ts"
 import * as KEYPAIR_CONSTANT from "./constants.ts"
-import { generateKeypair, keyToMaterial, materialToMultibase } from "./core.ts"
+import { generateKeypair, getJwkThumbprint, keyToJwk, keyToMaterial, materialToMultibase } from "./core.ts"
 import { SuiteError } from "../error/error.ts"
 import { SuiteErrorCode } from "../error/constants.ts"
+import type { KeypairDocument } from "../types/keypair/document.ts"
 
 /**
  * The Ed25519 keypair class. The secret key is a scalar, and the public key is a point on the Ed25519 curve.
@@ -23,15 +33,13 @@ export class Ed25519Keypair extends Keypair {
    * @param {URL} [_id] The identifier of the keypair.
    * @param {DIDURL} [_controller] The controller of the keypair.
    * @param {Date} [_revoked] The date and time when the keypair has been revoked.
-   * @param {string} [_publicKeyMultibase] The multibase encoded public key.
-   * @param {string} [_privateKeyMultibase] The multibase encoded private key.
    */
   constructor(
     _id?: URL,
     _controller?: DIDURL,
     _revoked?: Date,
   ) {
-    super(KEYPAIR_CONSTANT.SUITE_TYPE, _id, _controller, _revoked)
+    super(KEYPAIR_CONSTANT.KEYPAIR_TYPE, _id, _controller, _revoked)
   }
 
   /**
@@ -89,31 +97,60 @@ export class Ed25519Keypair extends Keypair {
    *
    * @param {KeypairExportOptions} options The options to export the keypair.
    *
-   * @returns {KeypairDocument} The serialized keypair to be exported.
+   * @returns {Promise<KeypairDocument>} Resolve to a serialized keypair to be exported.
    */
-  // override export(options: KeypairExportOptions): KeypairDocument {
-  //   if (!options.flag) {
-  //     options.flag = "public"
-  //   }
+  override async export(options: KeypairExportOptions): Promise<KeypairDocument> {
+    if (!options.flag) {
+      options.flag = "public"
+    }
+    if ((options.flag === "private" && !this.privateKey) || (options.flag === "public" && !this.publicKey)) {
+      throw new SuiteError(
+        SuiteErrorCode.LOGIC_ERROR,
+        "Ed25519Keypair.export",
+        "This keypair has not been initialized!",
+      )
+    }
+    if (!this.id || !this.controller) {
+      throw new SuiteError(
+        SuiteErrorCode.LOGIC_ERROR,
+        "Ed25519Keypair.export",
+        "Required fields are missing!",
+      )
+    }
 
-  //   // if ((pkFlag && !this.publicKeyMultibase) || (skFlag && !this.privateKeyMultibase)) {
-  //   //   throw new Error("Keypair has not been generated!")
-  //   // }
+    const result: KeypairDocument = {
+      "@context": CONTEXT_URL.SUITE_2020,
+      id: this.id,
+      controller: this.controller,
+      type: this.type,
+      revoked: this.revoked ? toW3CTimestampString(this.revoked) : undefined,
+    }
 
-  //   // if (!this.id || !this.controller) {
-  //   //   throw new Error("Keypair is missing required fields!")
-  //   // }
+    if (options.type === "jwk") {
+      if (options.flag === "public") {
+        result.publicKeyJwk = await keyToJwk(this.publicKey!, "public")
+      } else if (options.flag === "private") {
+        result.publicKeyJwk = await keyToJwk(this.privateKey!, "private")
+      }
+      result["@context"] = CONTEXT_URL.JWS_2020
+      result.type = "JsonWebKey2020"
+      result.id = `${this.controller}#${await getJwkThumbprint(result.publicKeyJwk!)}`
+    } else if (options.type === "multibase") {
+      result.publicKeyMultibase = await this.getPublicKeyMultibase()
+      if (options.flag === "private") {
+        result.privateKeyMultibase = await this.getPrivateKeyMultibase()
+      }
+    } else {
+      throw new SuiteError(
+        SuiteErrorCode.LOGIC_ERROR,
+        "Ed25519Keypair.export",
+        "Unsupported export type!",
+      )
+    }
 
-  //   // return {
-  //   //   "@context": CONTEXT_URL.SUITE_2020,
-  //   //   id: this.id,
-  //   //   controller: this.controller,
-  //   //   revoked: this.revoked ? toW3CTimestampString(this.revoked) : undefined,
-  //   //   type: this.type,
-  //   //   publicKeyMultibase: pkFlag ? this.publicKeyMultibase : undefined,
-  //   //   privateKeyMultibase: skFlag ? this.privateKeyMultibase : undefined,
-  //   // }
-  // }
+    // TODO: remove all undefined fields
+    return result
+  }
 
   /**
    * Calculate the public key multibase encoded string.
@@ -134,7 +171,7 @@ export class Ed25519Keypair extends Keypair {
 
   /**
    * Calculate the private key multibase encoded string.
-   * 
+   *
    * @returns {Promise<string>} Resolve to the multibase encoded private key string.
    */
   private async getPrivateKeyMultibase(): Promise<string> {

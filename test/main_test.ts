@@ -32,6 +32,23 @@ Deno.test("jwk import and export", async () => {
   assertEquals(jwkPublic, jwkPublic2)
 })
 
+Deno.test("Ed25519 keypair export", async () => {
+  const keypair = new Ed25519Keypair()
+  keypair.controller = "did:example:489398593"
+  await keypair.initialize()
+
+  const jwkPrivate = await keypair.export({ type: "jwk", flag: "private" })
+  const jwkPublic = await keypair.export({ type: "jwk", flag: "public" })
+
+  const multibasePrivate = await keypair.export({ type: "multibase", flag: "private" })
+  const multibasePublic = await keypair.export({ type: "multibase", flag: "public" })
+
+  console.log(jwkPrivate)
+  console.log(jwkPublic)
+  console.log(multibasePrivate)
+  console.log(multibasePublic)
+})
+
 // Deno.test("key export and import", async () => {
 //   const keypair = await crypto.subtle.generateKey("Ed25519", true, ["sign", "verify"]) as CryptoKeyPair
 //   const exportedPrivateKey = await crypto.subtle.exportKey("pkcs8", keypair.privateKey)

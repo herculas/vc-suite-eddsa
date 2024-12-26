@@ -1,5 +1,5 @@
-import { base58 } from "@scure/base"
-import { concatenate, type JWKEC } from "@crumble-jon/ld-crypto-syntax"
+import { base58, base64url } from "@scure/base"
+import { concatenate, type JWK, type JWKEC } from "@crumble-jon/ld-crypto-syntax"
 
 import * as KEYPAIR_CONSTANT from "./constants.ts"
 import { SuiteError } from "../error/error.ts"
@@ -181,4 +181,16 @@ export async function jwkToKey(jwk: JWKEC, flag: Flag): Promise<CryptoKey> {
   }
 
   return await crypto.subtle.importKey("jwk", prepare, "Ed25519", true, usage as KeyUsage[])
+}
+
+/**
+ * Calculate the thumbprint of a JWK instance using SHA-256 hash algorithm.
+ *
+ * @param {JWK} jwk A JSON Web Key instance.
+ * @returns {Promise<string>} Resolve to the thumbprint of the JWK instance.
+ */
+export async function getJwkThumbprint(jwk: JWK): Promise<string> {
+  const data = new TextEncoder().encode(JSON.stringify(jwk))
+  const hash = await crypto.subtle.digest("SHA-256", data)
+  return base64url.encode(new Uint8Array(hash))
 }
