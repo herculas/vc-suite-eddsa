@@ -1,47 +1,52 @@
-import { type DIDURL, Keypair, toW3CTimestampString, type URL } from "@crumble-jon/ld-crypto-syntax"
-import * as CONTEXT_URL from "../context/constants.ts"
-import * as KEYPAIR_CONSTANTS from "./constants.ts"
-import { assertKeyPrefix, decodeMultibase, encodeMultibase, generateRawKeypair } from "./core.ts"
-import type { KeypairDocument } from "../types/keypair/document.ts"
+import { concatenate, type DIDURL, Keypair, type URL, type VerificationResult } from "@crumble-jon/ld-crypto-syntax"
 
+import * as KEYPAIR_CONSTANT from "./constants.ts"
+import { generateKeypair, keyToMaterial, materialToMultibase } from "./core.ts"
+import { SuiteError } from "../error/error.ts"
+import { SuiteErrorCode } from "../error/constants.ts"
+
+/**
+ * The Ed25519 keypair class. The secret key is a scalar, and the public key is a point on the Ed25519 curve.
+ */
 export class Ed25519Keypair extends Keypair {
-  publicKeyMultibase?: string
-  privateKeyMultibase?: string
+  /**
+   * The Ed25519 public key.
+   */
+  publicKey?: CryptoKey
 
-  constructor(id?: URL, controller?: DIDURL, revoked?: Date, pkMultibase?: string, skMultibase?: string) {
-    super(KEYPAIR_CONSTANTS.SUITE_TYPE, id, controller, revoked)
-    if (pkMultibase) {
-      assertKeyPrefix(pkMultibase, KEYPAIR_CONSTANTS.MULTI_CODEC_PUBLIC_PREFIX)
-      this.publicKeyMultibase = pkMultibase
-    }
-    if (skMultibase) {
-      assertKeyPrefix(skMultibase, KEYPAIR_CONSTANTS.MULTI_CODEC_PRIVATE_PREFIX)
-      this.privateKeyMultibase = skMultibase
-    }
+  /**
+   * The Ed25519 private key.
+   */
+  privateKey?: CryptoKey
 
-    // set identifier if controller is provided
-    if (this.controller && !this.id) {
-      this.id = `${this.controller}#${this.fingerprint()}`
-    }
-
-    if (this._pkBuffer && this._pkBuffer.length !== 32) {
-      throw new Error("Invalid public key length!")
-    }
+  /**
+   * @param {URL} [_id] The identifier of the keypair.
+   * @param {DIDURL} [_controller] The controller of the keypair.
+   * @param {Date} [_revoked] The date and time when the keypair has been revoked.
+   * @param {string} [_publicKeyMultibase] The multibase encoded public key.
+   * @param {string} [_privateKeyMultibase] The multibase encoded private key.
+   */
+  constructor(
+    _id?: URL,
+    _controller?: DIDURL,
+    _revoked?: Date,
+  ) {
+    super(KEYPAIR_CONSTANT.SUITE_TYPE, _id, _controller, _revoked)
   }
 
   /**
-   * Generate a new Ed25519 keypair.
+   * Initialize the Ed25519 keypair using the Web Crypto API, set the public and private key material encoded in
+   * multibase format.
    */
-  override async generate() {
-    const keypair = await generateRawKeypair()
-    const pkMultibase = encodeMultibase(keypair.publicKey, KEYPAIR_CONSTANTS.MULTI_CODEC_PUBLIC_PREFIX)
-    const skMultibase = encodeMultibase(keypair.privateKey, KEYPAIR_CONSTANTS.MULTI_CODEC_PRIVATE_PREFIX)
+  override async initialize() {
+    const keypair = await generateKeypair()
+    this.privateKey = keypair.privateKey
+    this.publicKey = keypair.publicKey
 
-    assertKeyPrefix(pkMultibase, KEYPAIR_CONSTANTS.MULTI_CODEC_PUBLIC_PREFIX)
-    assertKeyPrefix(skMultibase, KEYPAIR_CONSTANTS.MULTI_CODEC_PRIVATE_PREFIX)
-
-    this.publicKeyMultibase = pkMultibase
-    this.privateKeyMultibase = skMultibase
+    // set identifier if controller is provided
+    if (this.controller && !this.id) {
+      this.id = `${this.controller}#${await this.generateFingerprint()}`
+    }
   }
 
   /**
@@ -49,13 +54,10 @@ export class Ed25519Keypair extends Keypair {
    * by the key suite, and is often either a hash of the public key material, or the full encoded public key. This
    * method is frequently used to initialize the key identifier or generate some types of cryptonym DIDs.
    *
-   * @returns {string} The fingerprint.
+   * @returns {Promise<string>} Resolve to the fingerprint.
    */
-  override fingerprint(): string {
-    if (!this.publicKeyMultibase) {
-      throw new Error("Have not generated keypair yet!")
-    }
-    return this.publicKeyMultibase
+  override generateFingerprint(): Promise<string> {
+    return this.getPublicKeyMultibase()
   }
 
   /**
@@ -63,46 +65,89 @@ export class Ed25519Keypair extends Keypair {
    *
    * @param {string} fingerprint A public key fingerprint.
    *
-   * @returns {boolean} `true` if the fingerprint matches the public key material, `false` otherwise.
+   * @returns {Promise<VerificationResult>} Resolve to a boolean indicating whether the given fingerprint matches this
+   * keypair instance.
    */
-  override verifyFingerprint(fingerprint: string): boolean {
-    return this.fingerprint() === fingerprint
+  override async verifyFingerprint(fingerprint: string): Promise<VerificationResult> {
+    if (fingerprint !== await this.generateFingerprint()) {
+      return Promise.resolve({
+        verified: false,
+        errors: new SuiteError(
+          SuiteErrorCode.FINGERPRINT_VERIFICATION_FAILURE,
+          "Ed25519Keypair.verifyFingerprint",
+          "Fingerprint does not match!",
+        ),
+      })
+    }
+    return Promise.resolve({
+      verified: true,
+    })
   }
 
   /**
    * Export the serialized representation of the keypair, along with other metadata which can be used to form a proof.
    *
-   * @param {string} flag Whether to include the public key in the export.
+   * @param {KeypairExportOptions} options The options to export the keypair.
    *
    * @returns {KeypairDocument} The serialized keypair to be exported.
    */
-  override export(flag: "private" | "public" | "both"): KeypairDocument {
-    const pkFlag = flag === "public" || flag === "both"
-    const skFlag = flag === "private" || flag === "both"
+  // override export(options: KeypairExportOptions): KeypairDocument {
+  //   if (!options.flag) {
+  //     options.flag = "public"
+  //   }
 
-    if ((pkFlag && !this.publicKeyMultibase) || (skFlag && !this.privateKeyMultibase)) {
-      throw new Error("Keypair has not been generated!")
-    }
+  //   // if ((pkFlag && !this.publicKeyMultibase) || (skFlag && !this.privateKeyMultibase)) {
+  //   //   throw new Error("Keypair has not been generated!")
+  //   // }
 
-    if (!this.id || !this.controller) {
-      throw new Error("Keypair is missing required fields!")
-    }
+  //   // if (!this.id || !this.controller) {
+  //   //   throw new Error("Keypair is missing required fields!")
+  //   // }
 
-    return {
-      "@context": CONTEXT_URL.SUITE_2020,
-      id: this.id,
-      controller: this.controller,
-      revoked: this.revoked ? toW3CTimestampString(this.revoked) : undefined,
-      type: this.type,
-      publicKeyMultibase: pkFlag ? this.publicKeyMultibase : undefined,
-      privateKeyMultibase: skFlag ? this.privateKeyMultibase : undefined,
+  //   // return {
+  //   //   "@context": CONTEXT_URL.SUITE_2020,
+  //   //   id: this.id,
+  //   //   controller: this.controller,
+  //   //   revoked: this.revoked ? toW3CTimestampString(this.revoked) : undefined,
+  //   //   type: this.type,
+  //   //   publicKeyMultibase: pkFlag ? this.publicKeyMultibase : undefined,
+  //   //   privateKeyMultibase: skFlag ? this.privateKeyMultibase : undefined,
+  //   // }
+  // }
+
+  /**
+   * Calculate the public key multibase encoded string.
+   *
+   * @returns {Promise<string>} Resolve to the multibase encoded public key string.
+   */
+  private async getPublicKeyMultibase(): Promise<string> {
+    if (!this.publicKey) {
+      throw new SuiteError(
+        SuiteErrorCode.LOGIC_ERROR,
+        "Ed25519Keypair.getPublicKeyMultibase",
+        "Public key has not been generated!",
+      )
     }
+    const material = await keyToMaterial(this.publicKey, "public")
+    return materialToMultibase(material, "public")
   }
 
-  get _pkBuffer(): Uint8Array | undefined {
-    if (!this.publicKeyMultibase) return undefined
-    const pkMultiCodec = decodeMultibase(this.publicKeyMultibase)
-    const pkBytes = pkMultiCodec.slice(KEYPAIR_CONSTANTS.MULTI_CODEC_PUBLIC_PREFIX.length)
-    return pkBytes
+  /**
+   * Calculate the private key multibase encoded string.
+   * 
+   * @returns {Promise<string>} Resolve to the multibase encoded private key string.
+   */
+  private async getPrivateKeyMultibase(): Promise<string> {
+    if (!this.privateKey || !this.publicKey) {
+      throw new SuiteError(
+        SuiteErrorCode.LOGIC_ERROR,
+        "EW25519Keypair.getPrivateKeyMultibase",
+        "Keypair has not been generated!",
+      )
+    }
+    const skMaterial = await keyToMaterial(this.privateKey, "private")
+    const pkMaterial = await keyToMaterial(this.publicKey, "public")
+    const material = concatenate(skMaterial, pkMaterial)
+    return materialToMultibase(material, "private")
   }
 }

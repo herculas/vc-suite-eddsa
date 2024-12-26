@@ -1,15 +1,15 @@
 {
   "version": "4",
   "specifiers": {
-    "jsr:@crumble-jon/ld-crypto-syntax@~0.1.7": "0.1.7",
+    "jsr:@crumble-jon/ld-crypto-syntax@~0.2.3": "0.2.3",
     "jsr:@scure/base@^1.1.7": "1.1.7",
     "jsr:@std/assert@1": "1.0.10",
     "jsr:@std/internal@^1.0.5": "1.0.5",
     "npm:jsonld@^8.3.2": "8.3.3"
   },
   "jsr": {
-    "@crumble-jon/ld-crypto-syntax@0.1.7": {
-      "integrity": "70b8429af0db8983672eb867d76efe696108abc1e678acf97653f76a43974010",
+    "@crumble-jon/ld-crypto-syntax@0.2.3": {
+      "integrity": "c159e5f8ba539348d9a6efb7ff3f883418874632ba6f626021124a5b216fac1a",
       "dependencies": [
         "npm:jsonld"
       ]
@@ -128,7 +128,7 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@crumble-jon/ld-crypto-syntax@~0.1.7",
+      "jsr:@crumble-jon/ld-crypto-syntax@~0.2.3",
       "jsr:@scure/base@^1.1.7",
       "jsr:@std/assert@1"
     ]
