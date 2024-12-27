@@ -2,6 +2,7 @@ import { base58, base64url } from "@scure/base"
 import { concatenate, type JWK, type JWKEC } from "@crumble-jon/ld-crypto-syntax"
 
 import * as KEYPAIR_CONSTANT from "./constants.ts"
+import * as SUITE_CONSTANT from "../suite/constants.ts"
 import { SuiteError } from "../error/error.ts"
 import { SuiteErrorCode } from "../error/constants.ts"
 
@@ -13,7 +14,7 @@ type Flag = "private" | "public"
  * @returns {Promise<CryptoKeyPair>} Resolve to an Ed25519 keypair.
  */
 export async function generateKeypair(): Promise<CryptoKeyPair> {
-  return await crypto.subtle.generateKey("Ed25519", true, ["sign", "verify"]) as CryptoKeyPair
+  return await crypto.subtle.generateKey(SUITE_CONSTANT.ALGORITHM, true, ["sign", "verify"]) as CryptoKeyPair
 }
 
 /**
@@ -27,17 +28,15 @@ export async function generateKeypair(): Promise<CryptoKeyPair> {
  * @returns {Promise<Uint8Array>} Resolve to the key material.
  */
 export async function keyToMaterial(key: CryptoKey, flag: Flag): Promise<Uint8Array> {
-  const format = flag === "private" ? "pkcs8" : "spki"
-  const expectedPrefix = flag === "private"
-    ? KEYPAIR_CONSTANT.DER_PRIVATE_KEY_PREFIX
-    : KEYPAIR_CONSTANT.DER_PUBLIC_KEY_PREFIX
+  const format = flag === "private" ? KEYPAIR_CONSTANT.PRIVATE_FORMAT : KEYPAIR_CONSTANT.PUBLIC_FORMAT
+  const expectedPrefix = flag === "private" ? KEYPAIR_CONSTANT.DER_PRIVATE_PREFIX : KEYPAIR_CONSTANT.DER_PUBLIC_PREFIX
   const exportedKey = await crypto.subtle.exportKey(format, key)
   const derPrefix = new Uint8Array(exportedKey.slice(0, expectedPrefix.length))
   if (!derPrefix.every((value, index) => value === expectedPrefix[index])) {
     throw new SuiteError(
       SuiteErrorCode.ENCODING_ERROR,
       "keypair/core.getKeyMaterial",
-      `Expected the buffer to be a ED25519 ${flag} key!`,
+      `Expected the buffer to be a Ed25519 ${flag} key!`,
     )
   }
   return new Uint8Array(exportedKey.slice(expectedPrefix.length))
@@ -52,10 +51,16 @@ export async function keyToMaterial(key: CryptoKey, flag: Flag): Promise<Uint8Ar
  * @returns {Promise<CryptoKey>} Resolve to the recovered Ed25519 key in `CryptoKey` format.
  */
 export async function materialToKey(material: Uint8Array, flag: Flag): Promise<CryptoKey> {
-  const format = flag === "private" ? "pkcs8" : "spki"
-  const prefix = flag === "private" ? KEYPAIR_CONSTANT.DER_PRIVATE_KEY_PREFIX : KEYPAIR_CONSTANT.DER_PUBLIC_KEY_PREFIX
+  const format = flag === "private" ? KEYPAIR_CONSTANT.PRIVATE_FORMAT : KEYPAIR_CONSTANT.PUBLIC_FORMAT
+  const prefix = flag === "private" ? KEYPAIR_CONSTANT.DER_PRIVATE_PREFIX : KEYPAIR_CONSTANT.DER_PUBLIC_PREFIX
   const buffer = concatenate(prefix, material)
-  return await crypto.subtle.importKey(format, buffer, "Ed25519", true, flag === "private" ? ["sign"] : ["verify"])
+  return await crypto.subtle.importKey(
+    format,
+    buffer,
+    SUITE_CONSTANT.ALGORITHM,
+    true,
+    flag === "private" ? ["sign"] : ["verify"],
+  )
 }
 
 /**
@@ -84,8 +89,8 @@ export function materialToMultibase(material: Uint8Array, flag: Flag): string {
   }
 
   const multiPrefix = flag === "private"
-    ? KEYPAIR_CONSTANT.MULTI_CODEC_PRIVATE_PREFIX
-    : KEYPAIR_CONSTANT.MULTI_CODEC_PUBLIC_PREFIX
+    ? KEYPAIR_CONSTANT.MULTIBASE_PRIVATE_PREFIX
+    : KEYPAIR_CONSTANT.MULTIBASE_PUBLIC_PREFIX
 
   const multibase = concatenate(multiPrefix, material)
   return KEYPAIR_CONSTANT.MULTIBASE_BASE58_BTC_PREFIX + base58.encode(multibase)
@@ -111,8 +116,8 @@ export function multibaseToMaterial(multibase: string, flag: Flag): Uint8Array {
   }
   const key = base58.decode(multibase.slice(KEYPAIR_CONSTANT.MULTIBASE_BASE58_BTC_PREFIX.length))
   const prefix = flag === "private"
-    ? KEYPAIR_CONSTANT.MULTI_CODEC_PRIVATE_PREFIX
-    : KEYPAIR_CONSTANT.MULTI_CODEC_PUBLIC_PREFIX
+    ? KEYPAIR_CONSTANT.MULTIBASE_PRIVATE_PREFIX
+    : KEYPAIR_CONSTANT.MULTIBASE_PUBLIC_PREFIX
   prefix.forEach((value, index) => {
     if (key[index] !== value) {
       throw new SuiteError(
@@ -137,12 +142,12 @@ export function multibaseToMaterial(multibase: string, flag: Flag): Uint8Array {
 export async function keyToJwk(key: CryptoKey, flag: Flag): Promise<JWKEC> {
   const jwk = await crypto.subtle.exportKey("jwk", key)
   return {
-    kty: jwk.kty || "OKP",
-    use: jwk.use || "sig",
+    kty: jwk.kty || KEYPAIR_CONSTANT.JWK_DEFAULT_TYPE,
+    use: jwk.use || KEYPAIR_CONSTANT.JWK_DEFAULT_USE,
     key_ops: jwk.key_ops,
-    alg: jwk.alg || "Ed25519",
+    alg: jwk.alg || SUITE_CONSTANT.ALGORITHM,
     ext: jwk.ext || true,
-    crv: jwk.crv || "Ed25519",
+    crv: jwk.crv || SUITE_CONSTANT.ALGORITHM,
     x: jwk.x || "",
     y: "",
     d: flag === "private" ? jwk.d! : undefined,
@@ -180,7 +185,7 @@ export async function jwkToKey(jwk: JWKEC, flag: Flag): Promise<CryptoKey> {
     d: secret,
   }
 
-  return await crypto.subtle.importKey("jwk", prepare, "Ed25519", true, usage as KeyUsage[])
+  return await crypto.subtle.importKey("jwk", prepare, SUITE_CONSTANT.ALGORITHM, true, usage as KeyUsage[])
 }
 
 /**

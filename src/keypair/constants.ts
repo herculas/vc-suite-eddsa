@@ -1,7 +1,8 @@
-export const MULTI_CODEC_PUBLIC_PREFIX = new Uint8Array([0xed, 0x01])
-export const MULTI_CODEC_PRIVATE_PREFIX = new Uint8Array([0x80, 0x26])
+export const MULTIBASE_BASE58_BTC_PREFIX = "z"
+export const MULTIBASE_PUBLIC_PREFIX = new Uint8Array([0xed, 0x01])
+export const MULTIBASE_PRIVATE_PREFIX = new Uint8Array([0x80, 0x26])
 
-export const DER_PUBLIC_KEY_PREFIX = new Uint8Array([
+export const DER_PUBLIC_PREFIX = new Uint8Array([
   0x30,
   0x2a,
   0x30,
@@ -16,7 +17,7 @@ export const DER_PUBLIC_KEY_PREFIX = new Uint8Array([
   0x00,
 ])
 
-export const DER_PRIVATE_KEY_PREFIX = new Uint8Array([
+export const DER_PRIVATE_PREFIX = new Uint8Array([
   0x30,
   0x2e,
   0x02,
@@ -35,6 +36,11 @@ export const DER_PRIVATE_KEY_PREFIX = new Uint8Array([
   0x20,
 ])
 
-export const MULTIBASE_BASE58_BTC_PREFIX = "z"
-export const KEYPAIR_TYPE_MAIN = "Ed25519VerificationKey2020"
-export const KEYPAIR_TYPE_JWK = "JsonWebKey2020"
+export const TYPE_BASIC = "Ed25519VerificationKey2020"
+export const TYPE_JWK = "JsonWebKey2020"
+
+export const PUBLIC_FORMAT = "spki"
+export const PRIVATE_FORMAT = "pkcs8"
+
+export const JWK_DEFAULT_TYPE = "OKP"
+export const JWK_DEFAULT_USE = "sig"

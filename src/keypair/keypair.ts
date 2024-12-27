@@ -24,7 +24,7 @@ import {
 import { jwkToKey } from "./core.ts"
 import { SuiteError } from "../error/error.ts"
 import { SuiteErrorCode } from "../error/constants.ts"
-import type { KeypairDocument } from "../types/keypair/document.ts"
+import type { KeypairDocument } from "../types/keypair.ts"
 
 /**
  * The Ed25519 keypair class. The secret key is a scalar, and the public key is a point on the Ed25519 curve.
@@ -50,7 +50,7 @@ export class Ed25519Keypair extends Keypair {
     _controller?: DIDURL,
     _revoked?: Date,
   ) {
-    super(KEYPAIR_CONSTANT.KEYPAIR_TYPE_MAIN, _id, _controller, _revoked)
+    super(KEYPAIR_CONSTANT.TYPE_BASIC, _id, _controller, _revoked)
   }
 
   /**
@@ -144,7 +144,7 @@ export class Ed25519Keypair extends Keypair {
         result.publicKeyJwk = await keyToJwk(this.privateKey!, "private")
       }
       result["@context"] = CONTEXT_URL.JWS_2020
-      result.type = KEYPAIR_CONSTANT.KEYPAIR_TYPE_JWK
+      result.type = KEYPAIR_CONSTANT.TYPE_JWK
       result.id = `${this.controller}#${await getJwkThumbprint(result.publicKeyJwk!)}`
     } else if (options.type === "multibase") {
       result.publicKeyMultibase = await this.getPublicKeyMultibase()
@@ -182,7 +182,7 @@ export class Ed25519Keypair extends Keypair {
     }
 
     // check the document type
-    if (document.type !== KEYPAIR_CONSTANT.KEYPAIR_TYPE_MAIN && document.type !== KEYPAIR_CONSTANT.KEYPAIR_TYPE_JWK) {
+    if (document.type !== KEYPAIR_CONSTANT.TYPE_BASIC && document.type !== KEYPAIR_CONSTANT.TYPE_JWK) {
       throw new SuiteError(
         SuiteErrorCode.FORMAT_ERROR,
         "Ed25519Keypair.import",
