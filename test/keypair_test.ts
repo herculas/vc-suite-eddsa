@@ -1,4 +1,4 @@
-import { assertEquals, assert } from "@std/assert"
+import { assert, assertEquals } from "@std/assert"
 
 import { generateKeypair, jwkToKey, keyToJwk } from "../src/keypair/core.ts"
 import { Ed25519Keypair } from "../src/keypair/keypair.ts"
@@ -30,6 +30,13 @@ Deno.test("jwk import and export", async () => {
 
   assertEquals(jwkPrivate, jwkPrivate2)
   assertEquals(jwkPublic, jwkPublic2)
+
+  console.log(jwkPrivate2)
+  jwkPrivate2.d = undefined
+  jwkPrivate2.key_ops = ["verify"]
+
+  const recoveredPublic2 = await jwkToKey(jwkPrivate2, "public")
+  console.log(recoveredPublic2)
 })
 
 Deno.test("Ed25519 keypair export", async () => {
@@ -49,25 +56,34 @@ Deno.test("Ed25519 keypair export", async () => {
   console.log(multibasePublic)
 })
 
-// Deno.test("key export and import", async () => {
-//   const keypair = await crypto.subtle.generateKey("Ed25519", true, ["sign", "verify"]) as CryptoKeyPair
-//   const exportedPrivateKey = await crypto.subtle.exportKey("pkcs8", keypair.privateKey)
-//   const typedExportedPrivateKey = new Uint8Array(exportedPrivateKey)
-//   console.log(typedExportedPrivateKey)
+Deno.test("Ed25519 keypair import 1: json web key", async () => {
+  const keypair = new Ed25519Keypair()
+  keypair.controller = "did:example:489398593"
+  await keypair.initialize()
 
-//   const importedPrivateKey = await crypto.subtle.importKey(
-//     "pkcs8",
-//     typedExportedPrivateKey,
-//     "Ed25519",
-//     true,
-//     ["sign"],
-//   ) as CryptoKey
-//   const reExportedPrivateKey = await crypto.subtle.exportKey("pkcs8", importedPrivateKey)
-//   const typedReExportedPrivateKey = new Uint8Array(reExportedPrivateKey)
-//   console.log(typedReExportedPrivateKey)
+  const jwkPrivate = await keypair.export({ type: "jwk", flag: "private" })
+  const jwkPublic = await keypair.export({ type: "jwk", flag: "public" })
 
-//   assertEquals(typedExportedPrivateKey, typedReExportedPrivateKey)
+  const recoveredPublicOnly = await Ed25519Keypair.import(jwkPublic, { type: "jwk" }) as Ed25519Keypair
+  console.log(recoveredPublicOnly.publicKey)
 
-//   const jwkPrivateKey = await crypto.subtle.exportKey("jwk", keypair.privateKey)
-//   console.log(jwkPrivateKey)
-// })
+  const recoveredBoth = await Ed25519Keypair.import(jwkPrivate, { type: "jwk" }) as Ed25519Keypair
+  console.log(recoveredBoth.privateKey)
+  console.log(recoveredBoth.publicKey)
+})
+
+Deno.test("Ed25519 keypair import 2: multibase", async () => {
+  const keypair = new Ed25519Keypair()
+  keypair.controller = "did:example:489398593"
+  await keypair.initialize()
+
+  const multibasePrivate = await keypair.export({ type: "multibase", flag: "private" })
+  const multibasePublic = await keypair.export({ type: "multibase", flag: "public" })
+
+  const recoveredPublicOnly = await Ed25519Keypair.import(multibasePublic, { type: "multibase" }) as Ed25519Keypair
+  console.log(recoveredPublicOnly.publicKey)
+
+  const recoveredBoth = await Ed25519Keypair.import(multibasePrivate, { type: "multibase" }) as Ed25519Keypair
+  console.log(recoveredBoth.privateKey)
+  console.log(recoveredBoth.publicKey)
+})

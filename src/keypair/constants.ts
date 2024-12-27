@@ -36,4 +36,5 @@ export const DER_PRIVATE_KEY_PREFIX = new Uint8Array([
 ])
 
 export const MULTIBASE_BASE58_BTC_PREFIX = "z"
-export const KEYPAIR_TYPE = "Ed25519VerificationKey2020"
+export const KEYPAIR_TYPE_MAIN = "Ed25519VerificationKey2020"
+export const KEYPAIR_TYPE_JWK = "JsonWebKey2020"

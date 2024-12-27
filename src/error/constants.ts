@@ -1,6 +1,7 @@
 export enum SuiteErrorCode {
   FORMAT_ERROR = 101,
   LOGIC_ERROR = 102,
+  EXPIRED_KEYPAIR = 103,
 
   ENCODING_ERROR = 110,
   DECODING_ERROR = 111,
