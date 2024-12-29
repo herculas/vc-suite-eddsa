@@ -5,28 +5,27 @@ import * as KEYPAIR_CONSTANT from "../keypair/constants.ts"
 import * as SUITE_CONSTANT from "./constants.ts"
 import { SuiteError } from "../error/error.ts"
 import { SuiteErrorCode } from "../error/constants.ts"
-import type { Ed25519Keypair } from "../keypair/keypair.ts"
 
 /**
  * Sign a message in `Uint8Array` format with a `Ed25519Keypair`.
  *
  * @param {Uint8Array} data The message to be signed.
- * @param {Ed25519Keypair} keypair The keypair to sign the message.
+ * @param {CryptoKey} [privateKey] The private key to sign the message.
  *
  * @returns {Promise<string>} The signature of the message.
  */
 export async function sign(
   data: Uint8Array,
-  keypair: Ed25519Keypair,
+  privateKey?: CryptoKey,
 ): Promise<string> {
-  if (!keypair.privateKey) {
+  if (!privateKey) {
     throw new SuiteError(
       SuiteErrorCode.KEY_NOT_FOUND,
       "suite/core.sign",
       "The keypair does not have a private key.",
     )
   }
-  const signature = await crypto.subtle.sign(SUITE_CONSTANT.ALGORITHM, keypair.privateKey, data)
+  const signature = await crypto.subtle.sign(SUITE_CONSTANT.ALGORITHM, privateKey, data)
   return KEYPAIR_CONSTANT.MULTIBASE_BASE58_BTC_PREFIX + base58.encode(new Uint8Array(signature))
 }
 
@@ -35,17 +34,17 @@ export async function sign(
  *
  * @param {Uint8Array} data The message to be verified.
  * @param {Uint8Array} signature The signature to be verified.
- * @param {Ed25519Keypair} keypair The keypair to verify the signature.
+ * @param {CryptoKey} [publicKey] The public key to verify the signature.
  *
  * @returns {Promise<VerificationResult>} The result of the verification.
  */
 export async function verify(
   data: Uint8Array,
   signature: string,
-  keypair: Ed25519Keypair,
+  publicKey?: CryptoKey,
 ): Promise<VerificationResult> {
   try {
-    if (!keypair.publicKey) {
+    if (!publicKey) {
       throw new SuiteError(
         SuiteErrorCode.KEY_NOT_FOUND,
         "suite/core.verify",
@@ -62,7 +61,7 @@ export async function verify(
     }
     const signatureBytes = base58.decode(signature.slice(KEYPAIR_CONSTANT.MULTIBASE_BASE58_BTC_PREFIX.length))
     return {
-      verified: await crypto.subtle.verify(SUITE_CONSTANT.ALGORITHM, keypair.publicKey, signatureBytes, data),
+      verified: await crypto.subtle.verify(SUITE_CONSTANT.ALGORITHM, publicKey, signatureBytes, data),
     }
   } catch (error) {
     return {

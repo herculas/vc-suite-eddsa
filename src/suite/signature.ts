@@ -9,7 +9,7 @@ import {
 
 import * as CONTEXT_URL from "../context/constants.ts"
 import * as SUITE_CONSTANT from "./constants.ts"
-import type { Ed25519Keypair } from "../keypair/keypair.ts"
+import { Ed25519Keypair } from "../keypair/keypair.ts"
 import { sign, verify } from "./core.ts"
 import { SuiteError } from "../error/error.ts"
 import { SuiteErrorCode } from "../error/constants.ts"
@@ -25,7 +25,8 @@ export class Ed25519Signature extends Signature {
     _verifyData: Uint8Array,
     _loader?: Loader,
   ): Promise<Proof> {
-    const signature = await sign(_verifyData, this.keypair as Ed25519Keypair)
+    const keypair = this.keypair as Ed25519Keypair
+    const signature = await sign(_verifyData, keypair.privateKey)
     _proof.proofValue = signature
     return _proof
   }
@@ -42,11 +43,20 @@ export class Ed25519Signature extends Signature {
         throw new SuiteError(
           SuiteErrorCode.FORMAT_ERROR,
           "suite/signature.verify",
-          "The proof value is missing."
+          "The proof value is missing.",
         )
       }
 
-      const result = await verify(_verifyData, _proof.proofValue, this.keypair as Ed25519Keypair)
+      const keypair = this.keypair as Ed25519Keypair
+      let publicKey: CryptoKey
+      if (keypair.publicKey) {
+        publicKey = keypair.publicKey
+      } else {
+        const loaded = await Ed25519Keypair.import(_method, { type: _method.publicKeyJwk ? "jwk" : "multibase" })
+        publicKey = loaded.publicKey!
+      }
+
+      const result = await verify(_verifyData, _proof.proofValue, publicKey)
       return {
         verified: result.verified,
         errors: result.errors,

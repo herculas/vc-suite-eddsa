@@ -1,6 +1,8 @@
 {
-  "id": "did:example:489398593#test",
-  "controller": "did:example:489398593",
-  "privateKeyBase58": "5D6Pa8dSwApdnfg7EZR8WnGfvLDCZPZGsZ5Y1ELL9VDj",
-  "publicKeyBase58": "oqpWYKaZD9M1Kbe94BVXpr8WTdFBNZyKv48cziTiQUeuhm7sBhCABMyYG4kcMrseC68YTFFgyhiNeBKjzdKk9MiRWuLv5H4FFujQsQK2KTAtzU8qTBiZqBHMmnLF4PL7Ytu"
+  "@context": "https://w3id.org/security/suites/ed25519-2020/v1",
+  "id": "did:example:1145141919810#z6MkpzZ43AC1RYPdo7KUTVcBaEBoiAbAxeNurJCXcmuphep6",
+  "controller": "did:example:1145141919810",
+  "type": "Ed25519VerificationKey2020",
+  "publicKeyMultibase": "z6MkpzZ43AC1RYPdo7KUTVcBaEBoiAbAxeNurJCXcmuphep6",
+  "secretKeyMultibase": "zrv11owrGmFYwVSBSVFvMFwgmyaja6LiCwjPNSoyg8bw2or6G85k74CFp6npLnxEAvD1vzG2w9Kug2o2s4cLmZdQaqt"
 }

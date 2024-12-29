@@ -2,6 +2,7 @@ import { assert, assertEquals } from "@std/assert"
 
 import { generateKeypair, jwkToKey, keyToJwk } from "../src/keypair/core.ts"
 import { Ed25519Keypair } from "../src/keypair/keypair.ts"
+import * as TEST_KEYPAIR from "../data/test/keypair.json" with { type: "json" }
 
 Deno.test("key gen", async () => {
   const keypair = await generateKeypair()
@@ -41,7 +42,7 @@ Deno.test("jwk import and export", async () => {
 
 Deno.test("Ed25519 keypair export", async () => {
   const keypair = new Ed25519Keypair()
-  keypair.controller = "did:example:489398593"
+  keypair.controller = "did:example:1145141919810"
   await keypair.initialize()
 
   const jwkPrivate = await keypair.export({ type: "jwk", flag: "private" })
@@ -58,7 +59,7 @@ Deno.test("Ed25519 keypair export", async () => {
 
 Deno.test("Ed25519 keypair import 1: json web key", async () => {
   const keypair = new Ed25519Keypair()
-  keypair.controller = "did:example:489398593"
+  keypair.controller = "did:example:1145141919810"
   await keypair.initialize()
 
   const jwkPrivate = await keypair.export({ type: "jwk", flag: "private" })
@@ -74,7 +75,7 @@ Deno.test("Ed25519 keypair import 1: json web key", async () => {
 
 Deno.test("Ed25519 keypair import 2: multibase", async () => {
   const keypair = new Ed25519Keypair()
-  keypair.controller = "did:example:489398593"
+  keypair.controller = "did:example:1145141919810"
   await keypair.initialize()
 
   const multibasePrivate = await keypair.export({ type: "multibase", flag: "private" })
@@ -86,4 +87,10 @@ Deno.test("Ed25519 keypair import 2: multibase", async () => {
   const recoveredBoth = await Ed25519Keypair.import(multibasePrivate, { type: "multibase" }) as Ed25519Keypair
   console.log(recoveredBoth.privateKey)
   console.log(recoveredBoth.publicKey)
+})
+
+Deno.test("Ed25519 keypair import 3: json", async () => {
+  const recoveredKey = await Ed25519Keypair.import(TEST_KEYPAIR.default, { type: "multibase" }) as Ed25519Keypair
+  console.log(recoveredKey.privateKey)
+  console.log(recoveredKey.publicKey)
 })

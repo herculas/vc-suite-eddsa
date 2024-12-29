@@ -169,9 +169,9 @@ export class Ed25519Keypair extends Keypair {
    * @param {KeypairDocument} document An externally fetched key document.
    * @param {KeypairImportOptions} options Options for keypair import.
    *
-   * @returns {Promise<Keypair>} Resolve to a keypair instance.
+   * @returns {Promise<Ed25519Keypair>} Resolve to a keypair instance.
    */
-  static override async import(document: KeypairDocument, options: KeypairImportOptions): Promise<Keypair> {
+  static override async import(document: KeypairDocument, options: KeypairImportOptions): Promise<Ed25519Keypair> {
     // check the context
     if (document["@context"] && options.checkContext && document["@context"] !== CONTEXT_URL.SUITE_2020) {
       throw new SuiteError(
