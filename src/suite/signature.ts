@@ -35,10 +35,11 @@ export class Ed25519Signature extends Signature {
     _document: PlainDocument,
     _proof: Proof,
     _verifyData: Uint8Array,
-    _method: VerificationMethodMap,
+    _method?: VerificationMethodMap,
     _loader?: Loader,
   ): Promise<VerificationResult> {
     try {
+      // check if the proof value is present
       if (!_proof.proofValue) {
         throw new SuiteError(
           SuiteErrorCode.FORMAT_ERROR,
@@ -47,15 +48,26 @@ export class Ed25519Signature extends Signature {
         )
       }
 
-      const keypair = this.keypair as Ed25519Keypair
+      // get the proper public key
       let publicKey: CryptoKey
-      if (keypair.publicKey) {
-        publicKey = keypair.publicKey
+      if (_method) {
+        // if verification method is provided, use it
+        const loadedKeypair = await Ed25519Keypair.import(_method, { type: _method.publicKeyJwk ? "jwk" : "multibase" })
+        publicKey = loadedKeypair.publicKey!
       } else {
-        const loaded = await Ed25519Keypair.import(_method, { type: _method.publicKeyJwk ? "jwk" : "multibase" })
-        publicKey = loaded.publicKey!
+        // otherwise, use the keypair
+        const keypair = this.keypair as Ed25519Keypair
+        if (!keypair.publicKey) {
+          throw new SuiteError(
+            SuiteErrorCode.KEY_NOT_FOUND,
+            "suite/signature.verify",
+            "The public key is missing.",
+          )
+        }
+        publicKey = keypair.publicKey
       }
 
+      // verify the signature
       const result = await verify(_verifyData, _proof.proofValue, publicKey)
       return {
         verified: result.verified,
