@@ -1,8 +1,8 @@
-export function add(a: number, b: number): number {
-  return a + b;
-}
+// keypair
+export { Ed25519Keypair } from "./keypair/keypair.ts"
 
-// Learn more at https://docs.deno.com/runtime/manual/examples/module_metadata#concepts
-if (import.meta.main) {
-  console.log("Add 2 + 3 =", add(2, 3));
-}
+// cryptographic suite
+export { Ed25519Signature } from "./suite/signature.ts"
+
+// types
+export type { KeypairDocument } from "./types/keypair.ts"
