@@ -14,6 +14,9 @@ import { sign, verify } from "./core.ts"
 import { SuiteError } from "../error/error.ts"
 import { SuiteErrorCode } from "../error/constants.ts"
 
+/**
+ * The Ed25519 Signature suite for linked data files.
+ */
 export class Ed25519Signature extends Signature {
   constructor(_keypair: Ed25519Keypair, _time?: Date, _proof?: Proof) {
     super(SUITE_CONSTANT.TYPE, _keypair, CONTEXT_URL.SUITE_2020, _time, _proof)
