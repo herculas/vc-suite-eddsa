@@ -6,6 +6,7 @@
     "keypair",
     "MULTIBASE",
     "multicodec",
-    "scure"
+    "scure",
+    "URDNA"
   ]
 }
