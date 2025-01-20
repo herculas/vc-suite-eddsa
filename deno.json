@@ -1,8 +1,11 @@
 {
   "name": "@crumble-jon/ld-sig-ed25519",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "license": "MIT",
   "exports": "./src/mod.ts",
+  "tasks": {
+    "test": "deno test --allow-read"
+  },
   "imports": {
     "@crumble-jon/ld-crypto-syntax": "jsr:@crumble-jon/ld-crypto-syntax@^0.3.5",
     "@scure/base": "jsr:@scure/base@^1.1.7",
