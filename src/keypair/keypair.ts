@@ -3,10 +3,11 @@ import {
   type DIDURL,
   type JWKEC,
   Keypair,
+  type KeypairDocument,
   type KeypairExportOptions,
   type KeypairImportOptions,
   toW3CTimestampString,
-  type URL,
+  type URI,
   type VerificationResult,
 } from "@crumble-jon/ld-crypto-syntax"
 
@@ -24,7 +25,6 @@ import {
 import { jwkToKey } from "./core.ts"
 import { SuiteError } from "../error/error.ts"
 import { SuiteErrorCode } from "../error/constants.ts"
-import type { KeypairDocument } from "../types/keypair.ts"
 
 /**
  * The Ed25519 keypair class. The secret key is a scalar, and the public key is a point on the Ed25519 curve.
@@ -41,12 +41,12 @@ export class Ed25519Keypair extends Keypair {
   privateKey?: CryptoKey
 
   /**
-   * @param {URL} [_id] The identifier of the keypair.
+   * @param {URI} [_id] The identifier of the keypair.
    * @param {DIDURL} [_controller] The controller of the keypair.
    * @param {Date} [_revoked] The date and time when the keypair has been revoked.
    */
   constructor(
-    _id?: URL,
+    _id?: URI,
     _controller?: DIDURL,
     _revoked?: Date,
   ) {
