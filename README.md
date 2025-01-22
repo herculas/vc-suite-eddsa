@@ -1,5 +1,7 @@
 # ld-sig-ed25519
 
+[![Release](https://github.com/herculas/ld-sig-ed25519/actions/workflows/release.yml/badge.svg)](https://github.com/herculas/ld-sig-ed25519/actions/workflows/release.yml)
+
 Ed25519 cryptographic suite for linked data files. The interface is compatible with the W3C specification of
 [JSON-LD](https://www.w3.org/TR/json-ld11/) and [Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/).
 
@@ -63,29 +65,29 @@ const signature = await suite.createProof(credential, { purpose, loader })
 
 The resulting document:
 
-```js
+```json
 {
   "@context": [
     "https://www.w3.org/ns/credentials/v2",
     "https://www.w3.org/ns/credentials/examples/v2"
   ],
-  id: "http://university.example/credentials/58473",
-  type: [ "VerifiableCredential", "ExampleAlumniCredential" ],
-  issuer: "did:example:1145141919810",
-  validFrom: "2010-01-01T00:00:00Z",
-  credentialSubject: {
-    id: "did:example:ebfeb1f712ebc6f1c276e12ec21",
-    alumniOf: {
-      id: "did:example:c276e12ec21ebfeb1f712ebc6f1",
-      name: "Example University"
+  "id": "http://university.example/credentials/58473",
+  "type": ["VerifiableCredential", "ExampleAlumniCredential"],
+  "issuer": "did:example:1145141919810",
+  "validFrom": "2010-01-01T00:00:00Z",
+  "credentialSubject": {
+    "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
+    "alumniOf": {
+      "id": "did:example:c276e12ec21ebfeb1f712ebc6f1",
+      "name": "Example University"
     }
   },
   "proof": {
-    type: "DataIntegrityProof",
-    created: "2025-01-17T16:09:46Z",
-    cryptosuite: "Ed25519Signature2020",
-    proofPurpose: "assertionMethod",
-    proofValue: "z2SNaio4aqahtsL7ZyuJAqiA96TjNXHgHsrAZy1EWgcjNXDPUejz2vpZfGNKGMywjLLzGpCfD66HypFpm2E7bcuMJ"
+    "type": "DataIntegrityProof",
+    "created": "2025-01-17T16:09:46Z",
+    "cryptosuite": "Ed25519Signature2020",
+    "proofPurpose": "assertionMethod",
+    "proofValue": "z2SNaio4aqahtsL7ZyuJAqiA96TjNXHgHsrAZy1EWgcjNXDPUejz2vpZfGNKGMywjLLzGpCfD66HypFpm2E7bcuMJ"
   }
 }
 ```
