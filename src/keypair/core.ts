@@ -197,18 +197,6 @@ export async function jwkToKey(jwk: JWKEC, flag: Flag): Promise<CryptoKey> {
 }
 
 /**
- * Calculate the thumbprint of a JWK instance using SHA-256 hash algorithm.
- *
- * @param {JWK} jwk A JSON Web Key instance.
- * @returns {Promise<string>} Resolve to the thumbprint of the JWK instance.
- */
-async function getJwkThumbprint(jwk: JWK): Promise<string> {
-  const data = new TextEncoder().encode(JSON.stringify(jwk))
-  const hash = await crypto.subtle.digest("SHA-256", data)
-  return base64url.encode(new Uint8Array(hash))
-}
-
-/**
  * Export a keypair instance into a `KeypairDocument` object containing a keypair in JWK format.
  *
  * @param {Ed25519Keypair} keypair An Ed25519 keypair instance.
@@ -325,4 +313,16 @@ export async function multibaseToKeypair(document: KeypairDocument, revoked?: Da
   }
 
   return keypair
+}
+
+/**
+ * Calculate the thumbprint of a JWK instance using SHA-256 hash algorithm.
+ *
+ * @param {JWK} jwk A JSON Web Key instance.
+ * @returns {Promise<string>} Resolve to the thumbprint of the JWK instance.
+ */
+async function getJwkThumbprint(jwk: JWK): Promise<string> {
+  const data = new TextEncoder().encode(JSON.stringify(jwk))
+  const hash = await crypto.subtle.digest("SHA-256", data)
+  return base64url.encode(new Uint8Array(hash))
 }
