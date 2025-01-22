@@ -1,12 +1,10 @@
 import {
   concatenate,
   type DIDURL,
-  type JWKEC,
   Keypair,
   type KeypairDocument,
   type KeypairExportOptions,
   type KeypairImportOptions,
-  toW3CTimestampString,
   type URI,
   type VerificationResult,
 } from "@crumble-jon/ld-crypto-syntax"
@@ -15,14 +13,13 @@ import * as CONTEXT_URL from "../context/constants.ts"
 import * as KEYPAIR_CONSTANT from "./constants.ts"
 import {
   generateKeypair,
-  getJwkThumbprint,
-  keyToJwk,
+  jwkToKeypair,
+  keypairToJwk,
+  keypairToMultiBase,
   keyToMaterial,
-  materialToKey,
   materialToMultibase,
-  multibaseToMaterial,
+  multibaseToKeypair,
 } from "./core.ts"
-import { jwkToKey } from "./core.ts"
 import { SuiteError } from "../error/error.ts"
 import { SuiteErrorCode } from "../error/constants.ts"
 
@@ -114,6 +111,7 @@ export class Ed25519Keypair extends Keypair {
     if (!options.flag) {
       options.flag = "public"
     }
+
     if ((options.flag === "private" && !this.privateKey) || (options.flag === "public" && !this.publicKey)) {
       throw new SuiteError(
         SuiteErrorCode.LOGIC_ERROR,
@@ -121,6 +119,7 @@ export class Ed25519Keypair extends Keypair {
         "This keypair has not been initialized!",
       )
     }
+
     if (!this.id || !this.controller) {
       throw new SuiteError(
         SuiteErrorCode.LOGIC_ERROR,
@@ -129,28 +128,11 @@ export class Ed25519Keypair extends Keypair {
       )
     }
 
-    const result: KeypairDocument = {
-      "@context": CONTEXT_URL.SUITE_2020,
-      id: this.id,
-      controller: this.controller,
-      type: this.type,
-      revoked: this.revoked ? toW3CTimestampString(this.revoked) : undefined,
-    }
-
+    // TODO: remove all undefined fields
     if (options.type === "jwk") {
-      if (options.flag === "public") {
-        result.publicKeyJwk = await keyToJwk(this.publicKey!, "public")
-      } else if (options.flag === "private") {
-        result.publicKeyJwk = await keyToJwk(this.privateKey!, "private")
-      }
-      result["@context"] = CONTEXT_URL.JWS_2020
-      result.type = KEYPAIR_CONSTANT.TYPE_JWK
-      result.id = `${this.controller}#${await getJwkThumbprint(result.publicKeyJwk!)}`
+      return await keypairToJwk(this, options.flag)
     } else if (options.type === "multibase") {
-      result.publicKeyMultibase = await this.getPublicKeyMultibase()
-      if (options.flag === "private") {
-        result.secretKeyMultibase = await this.getPrivateKeyMultibase()
-      }
+      return await keypairToMultiBase(this, options.flag)
     } else {
       throw new SuiteError(
         SuiteErrorCode.LOGIC_ERROR,
@@ -158,9 +140,6 @@ export class Ed25519Keypair extends Keypair {
         "Unsupported export type!",
       )
     }
-
-    // TODO: remove all undefined fields
-    return result
   }
 
   /**
@@ -172,7 +151,6 @@ export class Ed25519Keypair extends Keypair {
    * @returns {Promise<Ed25519Keypair>} Resolve to a keypair instance.
    */
   static override async import(document: KeypairDocument, options: KeypairImportOptions): Promise<Ed25519Keypair> {
-    // check the context
     if (document["@context"] && options.checkContext && document["@context"] !== CONTEXT_URL.SUITE_2020) {
       throw new SuiteError(
         SuiteErrorCode.FORMAT_ERROR,
@@ -181,7 +159,6 @@ export class Ed25519Keypair extends Keypair {
       )
     }
 
-    // check the document type
     if (document.type !== KEYPAIR_CONSTANT.TYPE_BASIC && document.type !== KEYPAIR_CONSTANT.TYPE_JWK) {
       throw new SuiteError(
         SuiteErrorCode.FORMAT_ERROR,
@@ -190,7 +167,6 @@ export class Ed25519Keypair extends Keypair {
       )
     }
 
-    // check if the keypair has been revoked
     const revoked = document.revoked ? new Date(document.revoked) : undefined
     if (revoked && options.checkRevoked && revoked < new Date()) {
       throw new SuiteError(
@@ -200,51 +176,17 @@ export class Ed25519Keypair extends Keypair {
       )
     }
 
-    const keypair = new Ed25519Keypair(document.id, document.controller, revoked)
-
     if (options.type === "jwk") {
-      if (!document.publicKeyJwk) {
-        throw new SuiteError(
-          SuiteErrorCode.DECODING_ERROR,
-          "Ed25519Keypair.import",
-          "The key material is missing from the JWK object!",
-        )
-      }
-      const jwk = document.publicKeyJwk as JWKEC
-
-      if (jwk.d) {
-        // private key
-        const jwkCopy = { ...jwk }
-        delete jwkCopy.d
-        jwkCopy.key_ops = ["verify"]
-        keypair.privateKey = await jwkToKey(jwk, "private")
-        keypair.publicKey = await jwkToKey(jwkCopy, "public")
-      } else {
-        // public key only
-        keypair.publicKey = await jwkToKey(jwk, "public")
-      }
+      return await jwkToKeypair(document, revoked)
     } else if (options.type === "multibase") {
-      if (document.secretKeyMultibase) {
-        // private key
-        const combinedMaterial = multibaseToMaterial(document.secretKeyMultibase, "private")
-        const privateKeyMaterial = combinedMaterial.slice(0, 32)
-        const publicKeyMaterial = combinedMaterial.slice(32)
-        keypair.privateKey = await materialToKey(privateKeyMaterial, "private")
-        keypair.publicKey = await materialToKey(publicKeyMaterial, "public")
-      } else {
-        // public key only
-        const publicKeyMaterial = multibaseToMaterial(document.publicKeyMultibase!, "public")
-        keypair.publicKey = await materialToKey(publicKeyMaterial, "public")
-      }
+      return await multibaseToKeypair(document, revoked)
     } else {
       throw new SuiteError(
-        SuiteErrorCode.LOGIC_ERROR,
+        SuiteErrorCode.DECODING_ERROR,
         "Ed25519Keypair.import",
-        "Unsupported import type!",
+        "The key material is missing from the multibase object!",
       )
     }
-
-    return keypair
   }
 
   /**
@@ -252,7 +194,7 @@ export class Ed25519Keypair extends Keypair {
    *
    * @returns {Promise<string>} Resolve to the multibase encoded public key string.
    */
-  private async getPublicKeyMultibase(): Promise<string> {
+  async getPublicKeyMultibase(): Promise<string> {
     if (!this.publicKey) {
       throw new SuiteError(
         SuiteErrorCode.LOGIC_ERROR,
@@ -269,7 +211,7 @@ export class Ed25519Keypair extends Keypair {
    *
    * @returns {Promise<string>} Resolve to the multibase encoded private key string.
    */
-  private async getPrivateKeyMultibase(): Promise<string> {
+  async getPrivateKeyMultibase(): Promise<string> {
     if (!this.privateKey || !this.publicKey) {
       throw new SuiteError(
         SuiteErrorCode.LOGIC_ERROR,

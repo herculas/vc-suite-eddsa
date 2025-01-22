@@ -1,10 +1,18 @@
 import { base58, base64url } from "@scure/base"
-import { concatenate, type JWK, type JWKEC } from "@crumble-jon/ld-crypto-syntax"
+import {
+  concatenate,
+  type JWK,
+  type JWKEC,
+  type KeypairDocument,
+  toW3CTimestampString,
+} from "@crumble-jon/ld-crypto-syntax"
 
+import * as CONTEXT_URL from "../context/constants.ts"
 import * as KEYPAIR_CONSTANT from "./constants.ts"
 import * as SUITE_CONSTANT from "../suite/constants.ts"
 import { SuiteError } from "../error/error.ts"
 import { SuiteErrorCode } from "../error/constants.ts"
+import { Ed25519Keypair } from "./keypair.ts"
 
 type Flag = "private" | "public"
 
@@ -73,14 +81,14 @@ export async function materialToKey(material: Uint8Array, flag: Flag): Promise<C
  * @returns {string} The multibase-encoded key string.
  */
 export function materialToMultibase(material: Uint8Array, flag: Flag): string {
-  if (flag === "private" && material.length !== 64) {
+  if (flag === "private" && material.length !== KEYPAIR_CONSTANT.LENGTH_PRIVATE_KEY) {
     throw new SuiteError(
       SuiteErrorCode.FORMAT_ERROR,
       "keypair/core.materialToMultibase",
       "The private key material should be a 64-octet array!",
     )
   }
-  if (flag === "public" && material.length !== 32) {
+  if (flag === "public" && material.length !== KEYPAIR_CONSTANT.LENGTH_PUBLIC_KEY) {
     throw new SuiteError(
       SuiteErrorCode.FORMAT_ERROR,
       "keypair/core.materialToMultibase",
@@ -194,8 +202,127 @@ export async function jwkToKey(jwk: JWKEC, flag: Flag): Promise<CryptoKey> {
  * @param {JWK} jwk A JSON Web Key instance.
  * @returns {Promise<string>} Resolve to the thumbprint of the JWK instance.
  */
-export async function getJwkThumbprint(jwk: JWK): Promise<string> {
+async function getJwkThumbprint(jwk: JWK): Promise<string> {
   const data = new TextEncoder().encode(JSON.stringify(jwk))
   const hash = await crypto.subtle.digest("SHA-256", data)
   return base64url.encode(new Uint8Array(hash))
+}
+
+/**
+ * Export a keypair instance into a `KeypairDocument` object containing a keypair in JWK format.
+ *
+ * @param {Ed25519Keypair} keypair An Ed25519 keypair instance.
+ * @param {Flag} flag The flag to determine if the key is private or public.
+ *
+ * @returns {Promise<KeypairDocument>} Resolve to a `KeypairDocument` object.
+ */
+export async function keypairToJwk(keypair: Ed25519Keypair, flag: Flag): Promise<KeypairDocument> {
+  const document: KeypairDocument = {
+    "@context": CONTEXT_URL.JWS_2020,
+    id: keypair.id!,
+    controller: keypair.controller!,
+    type: KEYPAIR_CONSTANT.TYPE_JWK,
+    revoked: keypair.revoked ? toW3CTimestampString(keypair.revoked) : undefined,
+  }
+
+  if (flag === "public") {
+    document.publicKeyJwk = await keyToJwk(keypair.publicKey!, "public")
+    document.id = `${keypair.controller!}#${await getJwkThumbprint(document.publicKeyJwk!)}`
+  } else {
+    document.privateKeyJwk = await keyToJwk(keypair.privateKey!, "private")
+    document.id = `${keypair.controller!}#${await getJwkThumbprint(document.privateKeyJwk!)}`
+  }
+  return document
+}
+
+/**
+ * Import a keypair from a serialized `KeypairDocument` object containing a keypair in JWK format.
+ *
+ * @param {KeypairDocument} document An externally fetched key document.
+ * @param {Date} revoked The revoked date of the keypair.
+ *
+ * @returns {Promise<Ed25519Keypair>} Resolve to a keypair instance.
+ */
+export async function jwkToKeypair(document: KeypairDocument, revoked?: Date): Promise<Ed25519Keypair> {
+  const keypair = new Ed25519Keypair(document.id, document.controller, revoked)
+
+  if (document.privateKeyJwk) {
+    // private key
+    const jwk = document.privateKeyJwk as JWKEC
+    const jwkCopy = { ...jwk }
+    delete jwkCopy.d
+    jwkCopy.key_ops = ["verify"]
+    keypair.privateKey = await jwkToKey(jwk, "private")
+    keypair.publicKey = await jwkToKey(jwkCopy, "public")
+  } else if (document.publicKeyJwk) {
+    // public key only
+    const jwk = document.publicKeyJwk as JWKEC
+    keypair.publicKey = await jwkToKey(jwk, "public")
+  } else {
+    throw new SuiteError(
+      SuiteErrorCode.DECODING_ERROR,
+      "Ed25519Keypair.import",
+      "The key material is missing from the JWK object!",
+    )
+  }
+
+  return keypair
+}
+
+/**
+ * Export a keypair instance into a `KeypairDocument` object containing a keypair in multibase format.
+ *
+ * @param {Ed25519Keypair} keypair An Ed25519 keypair instance.
+ * @param {Flag} flag The flag to determine if the key is private or public.
+ *
+ * @returns {Promise<KeypairDocument>} Resolve to a `KeypairDocument` object.
+ */
+export async function keypairToMultiBase(keypair: Ed25519Keypair, flag: Flag): Promise<KeypairDocument> {
+  const document: KeypairDocument = {
+    "@context": CONTEXT_URL.SUITE_2020,
+    id: keypair.id!,
+    controller: keypair.controller!,
+    type: keypair.type,
+    revoked: keypair.revoked ? toW3CTimestampString(keypair.revoked) : undefined,
+  }
+
+  if (flag === "public") {
+    document.publicKeyMultibase = await keypair.getPublicKeyMultibase()
+  } else {
+    document.secretKeyMultibase = await keypair.getPrivateKeyMultibase()
+  }
+
+  return document
+}
+
+/**
+ * Import a keypair from a serialized `KeypairDocument` object containing a keypair in multibase format.
+ *
+ * @param {KeypairDocument} document An externally fetched key document.
+ * @param {Date} revoked The revoked date of the keypair.
+ *
+ * @returns {Promise<Ed25519Keypair>} Resolve to a keypair instance.
+ */
+export async function multibaseToKeypair(document: KeypairDocument, revoked?: Date): Promise<Ed25519Keypair> {
+  const keypair = new Ed25519Keypair(document.id, document.controller, revoked)
+
+  if (document.secretKeyMultibase) {
+    const combinedMaterial = multibaseToMaterial(document.secretKeyMultibase!, "private")
+    const length = KEYPAIR_CONSTANT.LENGTH_PRIVATE_KEY - KEYPAIR_CONSTANT.LENGTH_PUBLIC_KEY
+    const privateKeyMaterial = combinedMaterial.slice(0, length)
+    const publicKeyMaterial = combinedMaterial.slice(length)
+    keypair.privateKey = await materialToKey(privateKeyMaterial, "private")
+    keypair.publicKey = await materialToKey(publicKeyMaterial, "public")
+  } else if (document.publicKeyMultibase) {
+    const publicKeyMaterial = multibaseToMaterial(document.publicKeyMultibase!, "public")
+    keypair.publicKey = await materialToKey(publicKeyMaterial, "public")
+  } else {
+    throw new SuiteError(
+      SuiteErrorCode.DECODING_ERROR,
+      "Ed25519Keypair.import",
+      "The key material is missing from the multibase object!",
+    )
+  }
+
+  return keypair
 }
