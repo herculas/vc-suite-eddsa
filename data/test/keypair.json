@@ -3,6 +3,6 @@
   "id": "did:example:1145141919810#z6MkpzZ43AC1RYPdo7KUTVcBaEBoiAbAxeNurJCXcmuphep6",
   "controller": "did:example:1145141919810",
   "type": "Ed25519VerificationKey2020",
-  "publicKeyMultibase": "z6MkpzZ43AC1RYPdo7KUTVcBaEBoiAbAxeNurJCXcmuphep6",
-  "secretKeyMultibase": "zrv11owrGmFYwVSBSVFvMFwgmyaja6LiCwjPNSoyg8bw2or6G85k74CFp6npLnxEAvD1vzG2w9Kug2o2s4cLmZdQaqt"
+  "publicKeyMultibase": "z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2",
+  "secretKeyMultibase": "z3u2en7t5LR2WtQH5PfFqMqwVHBeXouLzo6haApm8XHqvjxq"
 }

@@ -1,6 +1,6 @@
-# ld-sig-ed25519
+# vc-suite-ed25519
 
-[![Release](https://github.com/herculas/ld-sig-ed25519/actions/workflows/release.yml/badge.svg)](https://github.com/herculas/ld-sig-ed25519/actions/workflows/release.yml)
+[![Release](https://github.com/herculas/vc-suite-ed25519/actions/workflows/release.yml/badge.svg)](https://github.com/herculas/vc-suite-ed25519/actions/workflows/release.yml)
 
 Ed25519 cryptographic suite for linked data files. The interface is compatible with the W3C specification of
 [JSON-LD](https://www.w3.org/TR/json-ld11/) and [Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/).
@@ -9,14 +9,14 @@ Ed25519 cryptographic suite for linked data files. The interface is compatible w
 
 Ed25519 signature scheme can be used to provide integrity and authenticity guarantees for linked data files. This
 package is designed to provide the Ed25519 cryptographic suite. This suite should be used with the
-[ld-crypto-syntax](https://jsr.io/@crumble-jon/ld-crypto-syntax) framework.
+[vc-data-integrity](https://jsr.io/@herculas/vc-data-integrity) framework.
 
 ## Getting started
 
 To use this package within your own Deno project, run:
 
 ```shell
-deno add jsr:@crumble-jon/ld-sig-ed25519
+deno add jsr:@herculas/vc-suite-ed25519
 ```
 
 ## Usage

@@ -9,10 +9,10 @@ import {
   toW3CTimestampString,
 } from "@crumble-jon/ld-crypto-syntax"
 
-import { Ed25519Keypair } from "../src/keypair/keypair.ts"
+import { Ed25519Keypair } from "../src/key/keypair.ts"
 import { sign, verify } from "../src/suite/core.ts"
 import { loader } from "./loader.ts"
-import { Ed25519Signature } from "../src/suite/signature.ts"
+import { Ed25519Signature } from "../src/suite/rdfc.ts"
 
 Deno.test("core signing and verifying", async () => {
   const keypair = new Ed25519Keypair()

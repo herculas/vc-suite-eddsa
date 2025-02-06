@@ -3,10 +3,13 @@
     "cryptosuite",
     "denoland",
     "DIDURL",
+    "eddsa",
+    "herculas",
     "JWKEC",
     "keypair",
     "MULTIBASE",
     "multicodec",
+    "Rdfc",
     "scure",
     "URDNA"
   ]

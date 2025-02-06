@@ -1,7 +1,7 @@
 import { assert, assertEquals } from "@std/assert"
 
-import { generateKeypair, jwkToKey, keyToJwk } from "../src/keypair/core.ts"
-import { Ed25519Keypair } from "../src/keypair/keypair.ts"
+import { generateKeypair, jwkToKey, keyToJwk } from "../src/key/core.ts"
+import { Ed25519Keypair } from "../src/key/keypair.ts"
 import * as TEST_KEYPAIR from "../data/test/keypair.json" with { type: "json" }
 
 Deno.test("key gen", async () => {
@@ -14,7 +14,7 @@ Deno.test("fingerprint", async () => {
   await keypair.initialize()
   const fingerprint = await keypair.generateFingerprint()
   const result = await keypair.verifyFingerprint(fingerprint)
-  assert(result.verified)
+  assert(result)
 })
 
 Deno.test("jwk import and export", async () => {
@@ -31,13 +31,6 @@ Deno.test("jwk import and export", async () => {
 
   assertEquals(jwkPrivate, jwkPrivate2)
   assertEquals(jwkPublic, jwkPublic2)
-
-  console.log(jwkPrivate2)
-  jwkPrivate2.d = undefined
-  jwkPrivate2.key_ops = ["verify"]
-
-  const recoveredPublic2 = await jwkToKey(jwkPrivate2, "public")
-  console.log(recoveredPublic2)
 })
 
 Deno.test("Ed25519 keypair export", async () => {
@@ -64,6 +57,8 @@ Deno.test("Ed25519 keypair import 1: json web key", async () => {
 
   const jwkPrivate = await keypair.export({ type: "jwk", flag: "private" })
   const jwkPublic = await keypair.export({ type: "jwk", flag: "public" })
+  console.log(jwkPrivate)
+  console.log(jwkPublic)
 
   const recoveredPublicOnly = await Ed25519Keypair.import(jwkPublic, { type: "jwk" }) as Ed25519Keypair
   console.log(recoveredPublicOnly.publicKey)
@@ -80,6 +75,8 @@ Deno.test("Ed25519 keypair import 2: multibase", async () => {
 
   const multibasePrivate = await keypair.export({ type: "multibase", flag: "private" })
   const multibasePublic = await keypair.export({ type: "multibase", flag: "public" })
+  console.log(multibasePrivate)
+  console.log(multibasePublic)
 
   const recoveredPublicOnly = await Ed25519Keypair.import(multibasePublic, { type: "multibase" }) as Ed25519Keypair
   console.log(recoveredPublicOnly.publicKey)
@@ -91,6 +88,9 @@ Deno.test("Ed25519 keypair import 2: multibase", async () => {
 
 Deno.test("Ed25519 keypair import 3: json", async () => {
   const recoveredKey = await Ed25519Keypair.import(TEST_KEYPAIR.default, { type: "multibase" }) as Ed25519Keypair
-  console.log(recoveredKey.privateKey)
-  console.log(recoveredKey.publicKey)
+
+  const data = crypto.getRandomValues(new Uint8Array(128))
+  const signature = await crypto.subtle.sign("Ed25519", recoveredKey.privateKey!, data)
+  const verification = await crypto.subtle.verify("Ed25519", recoveredKey.publicKey!, signature, data)
+  assert(verification)
 })
