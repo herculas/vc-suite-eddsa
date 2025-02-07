@@ -1,8 +1,8 @@
-import { base58, base64url } from "@scure/base"
 import { concatenate, type JWK, type JWKEC, type KeyFlag } from "@herculas/vc-data-integrity"
 
 import { SuiteError } from "../error/error.ts"
 import { ErrorCode } from "../error/constants.ts"
+
 import * as KEY_CONSTANT from "../constants/key.ts"
 import * as PREFIX_CONSTANT from "../constants/prefix.ts"
 import * as SUITE_CONSTANT from "../constants/suite.ts"

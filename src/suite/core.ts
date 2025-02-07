@@ -1,8 +1,8 @@
-import { base58 } from "@scure/base"
 import type { VerificationResult } from "@herculas/vc-data-integrity"
 
 import { SuiteError } from "../error/error.ts"
 import { ErrorCode } from "../error/constants.ts"
+
 import * as PREFIX_CONSTANT from "../constants/prefix.ts"
 import * as SUITE_CONSTANT from "../constants/suite.ts"
 

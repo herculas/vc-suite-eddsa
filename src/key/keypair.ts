@@ -13,7 +13,8 @@ import {
   type VerificationMethodJwk,
   type VerificationMethodMultibase,
 } from "@herculas/vc-data-integrity"
-import * as CONTEXT_URL from "../context/url.ts"
+
+
 import {
   generateKeypair,
   getJwkThumbprint,
@@ -24,10 +25,12 @@ import {
   materialToMultibase,
   multibaseToMaterial,
 } from "./core.ts"
+
 import { SuiteError } from "../error/error.ts"
 import { ErrorCode } from "../error/constants.ts"
-import * as KEY_CONSTANT from "../constants/key.ts"
 
+import * as KEY_CONSTANT from "../constants/key.ts"
+import * as CONTEXT_URL from "../context/url.ts"
 /**
  * The Ed25519 keypair class. The secret key is a scalar, and the public key is a point on the Ed25519 curve.
  */

@@ -2,7 +2,8 @@ import { assert, assertEquals } from "@std/assert"
 
 import { generateKeypair, jwkToKey, keyToJwk } from "../src/key/core.ts"
 import { Ed25519Keypair } from "../src/key/keypair.ts"
-import * as TEST_KEYPAIR from "../data/test/keypair.json" with { type: "json" }
+
+import * as TEST_KEYPAIR from "./mock/keypair.json" with { type: "json" }
 
 Deno.test("key gen", async () => {
   const keypair = await generateKeypair()

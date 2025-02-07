@@ -11,7 +11,7 @@ import {
 
 import { Ed25519Keypair } from "../src/key/keypair.ts"
 import { sign, verify } from "../src/suite/core.ts"
-import { loader } from "./loader.ts"
+import { loader } from "./mock/loader.ts"
 import { Ed25519Signature } from "../src/suite/rdfc.ts"
 
 Deno.test("core signing and verifying", async () => {

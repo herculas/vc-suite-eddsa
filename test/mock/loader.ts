@@ -1,6 +1,6 @@
 import { extend, type Loader, type URI } from "@crumble-jon/ld-crypto-syntax"
 
-import * as KEYPAIR from "../data/test/keypair.json" with { type: "json" }
+import * as KEYPAIR from "./keypair.json" with { type: "json" }
 
 export const customLoader: Loader = (url: URI) => {
   const document = new Map<string, object>([
