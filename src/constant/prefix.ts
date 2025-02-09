@@ -1,9 +1,9 @@
 export const BASE_58_BTC = "z"
 
-export const MULTIBASE_PUBLIC = new Uint8Array([0xed, 0x01])
-export const MULTIBASE_PRIVATE = new Uint8Array([0x80, 0x26])
+export const PUBLIC_KEY_MULTIBASE = new Uint8Array([0xed, 0x01])
+export const PRIVATE_KEY_MULTIBASE = new Uint8Array([0x80, 0x26])
 
-export const DER_PUBLIC = new Uint8Array([
+export const PUBLIC_KEY_DER = new Uint8Array([
   0x30,
   0x2a,
   0x30,
@@ -18,7 +18,7 @@ export const DER_PUBLIC = new Uint8Array([
   0x00,
 ])
 
-export const DER_PRIVATE = new Uint8Array([
+export const PRIVATE_KEY_DER = new Uint8Array([
   0x30,
   0x2e,
   0x02,

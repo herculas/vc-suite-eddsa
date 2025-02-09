@@ -1,8 +1,6 @@
-import { extend, type Loader, type URI } from "@crumble-jon/ld-crypto-syntax"
-
 import * as KEYPAIR from "./keypair.json" with { type: "json" }
 
-export const customLoader: Loader = (url: URI) => {
+export const testLoader = extend((url) => {
   const document = new Map<string, object>([
     ["did:example:1145141919810", KEYPAIR.default],
   ])
@@ -17,6 +15,4 @@ export const customLoader: Loader = (url: URI) => {
   throw new Error(
     `Attempted to remote load context : '${url}', please cache instead`,
   )
-}
-
-export const loader = extend(customLoader)
+})

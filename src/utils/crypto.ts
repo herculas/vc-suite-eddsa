@@ -1,11 +1,3 @@
-import type { VerificationResult } from "@herculas/vc-data-integrity"
-
-import { SuiteError } from "../error/error.ts"
-import { ErrorCode } from "../error/constants.ts"
-
-import * as PREFIX_CONSTANT from "../constants/prefix.ts"
-import * as SUITE_CONSTANT from "../constants/suite.ts"
-
 /**
  * Sign a message in `Uint8Array` format with a `Ed25519Keypair`.
  *

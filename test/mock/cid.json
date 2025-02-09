@@ -1,0 +1,14 @@
+{
+  "@context": "https://www.w3.org/ns/cid/v1",
+  "id": "did:example:1145141919810",
+  "verificationMethod": [{
+    "id": "did:example:1145141919810#key-1",
+    "type": "Multikey",
+    "controller": "did:example:1145141919810",
+    "publicKeyMultibase": "z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2",
+    "secretKeyMultibase": "z3u2en7t5LR2WtQH5PfFqMqwVHBeXouLzo6haApm8XHqvjxq"
+  }],
+  "assertionMethod": [
+    "did:example:1145141919810#key-1"
+  ]
+}

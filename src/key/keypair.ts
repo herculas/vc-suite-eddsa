@@ -1,36 +1,22 @@
 import {
+  type CIDDocument,
   type DIDURL,
-  type ExportOptions,
-  type ImportOptions,
-  includeContext,
-  type JWKEC,
-  type KeyFlag,
+  document,
+  ImplementationError,
+  ImplementationErrorCode,
   Keypair,
-  toW3CTimestampString,
+  type KeypairOptions,
+  loader,
   type URI,
   VC_BASE_URL,
-  type VerificationMethod,
   type VerificationMethodJwk,
   type VerificationMethodMultibase,
+  type VerificationRelationship,
 } from "@herculas/vc-data-integrity"
 
+import * as core from "../utils/key.ts"
+import * as SUITE_CONSTANT from "../constant/suite.ts"
 
-import {
-  generateKeypair,
-  getJwkThumbprint,
-  jwkToKey,
-  keyToJwk,
-  keyToMaterial,
-  materialToKey,
-  materialToMultibase,
-  multibaseToMaterial,
-} from "./core.ts"
-
-import { SuiteError } from "../error/error.ts"
-import { ErrorCode } from "../error/constants.ts"
-
-import * as KEY_CONSTANT from "../constants/key.ts"
-import * as CONTEXT_URL from "../context/url.ts"
 /**
  * The Ed25519 keypair class. The secret key is a scalar, and the public key is a point on the Ed25519 curve.
  */
@@ -46,12 +32,18 @@ export class Ed25519Keypair extends Keypair {
   privateKey?: CryptoKey
 
   /**
+   * The type of the cryptographic suite used by the keypair instances.
+   */
+  static override readonly type = SUITE_CONSTANT.KEYPAIR_TYPE
+
+  /**
    * @param {URI} [_id] The identifier of the keypair.
    * @param {DIDURL} [_controller] The controller of the keypair.
    * @param {Date} [_revoked] The date and time when the keypair has been revoked.
    */
   constructor(_id?: URI, _controller?: DIDURL, _revoked?: Date) {
-    super(KEY_CONSTANT.TYPE_BASIC, _id, _controller, _revoked)
+    super(_id, _controller, _revoked)
+    // TODO: add expiration date
   }
 
   /**
@@ -59,7 +51,7 @@ export class Ed25519Keypair extends Keypair {
    * multibase format.
    */
   override async initialize() {
-    const keypair = await generateKeypair()
+    const keypair = await core.generateRawKeypair()
     this.privateKey = keypair.privateKey
     this.publicKey = keypair.publicKey
 
@@ -77,7 +69,15 @@ export class Ed25519Keypair extends Keypair {
    * @returns {Promise<string>} Resolve to the fingerprint.
    */
   override async generateFingerprint(): Promise<string> {
-    return await this.getPublicKeyMultibase()
+    if (!this.publicKey) {
+      throw new ImplementationError(
+        ImplementationErrorCode.INVALID_KEYPAIR_CONTENT,
+        "Ed25519Keypair.generateFingerprint",
+        "Public key has not been generated!",
+      )
+    }
+    const material = await core.keyToMaterial(this.publicKey, "public")
+    return core.materialToMultibase(material, "public")
   }
 
   /**
@@ -95,244 +95,128 @@ export class Ed25519Keypair extends Keypair {
   /**
    * Export the serialized representation of the keypair, along with other metadata which can be used to form a proof.
    *
-   * @param {ExportOptions} options The options to export the keypair.
+   * @param {KeypairOptions.Export} options The options to export the keypair.
    *
-   * @returns {Promise<KeypairDocument>} Resolve to a serialized keypair to be exported.
+   * @returns {Promise<CIDDocument>} Resolve to a serialized keypair to be exported.
    */
-  override export(options: ExportOptions): Promise<VerificationMethod> {
-    if (!options.flag) {
-      options.flag = "public"
-    }
+  override async export(options?: KeypairOptions.Export): Promise<CIDDocument> {
+    // set default options
+    options ||= {}
+    options.flag ||= "public"
+    options.type ||= SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_MULTI
 
+    // check if the keypair has been initialized
     if ((options.flag === "private" && !this.privateKey) || (options.flag === "public" && !this.publicKey)) {
-      throw new SuiteError(
-        ErrorCode.LOGIC_ERROR,
+      throw new ImplementationError(
+        ImplementationErrorCode.KEYPAIR_EXPORT_ERROR,
         "Ed25519Keypair.export",
         "This keypair has not been initialized!",
       )
     }
 
-    if (!this.id || !this.controller) {
-      throw new SuiteError(
-        ErrorCode.LOGIC_ERROR,
+    // check if the identifier and controller are well-formed
+    if (!this.id || !this.controller || !this.id.startsWith(this.controller)) {
+      throw new ImplementationError(
+        ImplementationErrorCode.KEYPAIR_EXPORT_ERROR,
         "Ed25519Keypair.export",
-        "Required fields are missing!",
+        "The identifier or controller of this keypair is not well-formed!",
       )
     }
 
-    if (options.type === "jwk") {
-      return this.toJwk(options.flag)
-    } else if (options.type === "multibase") {
-      return this.toMultibase(options.flag)
+    // initialize the exported document
+    const document: CIDDocument = {
+      "@context": VC_BASE_URL.CID_V1,
+      id: this.controller,
+      verificationMethod: [],
+    }
+
+    // generate the verification method
+    if (options.type === SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_MULTI) {
+      const verificationMethod = await core.keypairToMultibase(this, options.flag)
+      document.verificationMethod!.push(verificationMethod)
+    } else if (options.type === SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_JWK) {
+      const verificationMethod = await core.keypairToJwk(this, options.flag)
+      document.verificationMethod!.push(verificationMethod)
     } else {
-      throw new SuiteError(
-        ErrorCode.LOGIC_ERROR,
+      throw new ImplementationError(
+        ImplementationErrorCode.KEYPAIR_EXPORT_ERROR,
         "Ed25519Keypair.export",
-        "Unsupported export type!",
+        "The keypair type is not supported!",
       )
     }
+
+    // iterate through the verification relationships in the export option
+    for (const relationshipName in options.relationship) {
+      document[relationshipName] = new Array<VerificationRelationship>()
+      document[relationshipName].push(document.verificationMethod![0].id)
+    }
+
+    // return the exported document
+    return document
   }
 
   /**
    * Import a keypair from a serialized representation of a keypair.
    *
-   * @param {KeypairDocument} document An externally fetched key document.
-   * @param {ImportOptions} options Options for keypair import.
+   * @param {CIDDocument} inputDocument A keypair document fetched from a external source.
+   * @param {KeypairOptions.Import} options Options for keypair import.
    *
-   * @returns {Promise<Ed25519Keypair>} Resolve to a keypair instance.
+   * @returns {Promise<Ed25519Keypair>} Resolve to a Ed25519 keypair instance.
    */
-  static override import(document: VerificationMethod, options: ImportOptions): Promise<Ed25519Keypair> {
-    // check the context
+  static override async import(inputDocument: CIDDocument, options?: KeypairOptions.Import): Promise<Ed25519Keypair> {
+    // set default options
+    options ||= {}
+    options.checkContext ||= true
+    options.checkRevoked ||= false
+
+    // validate the JSON-LD context
+    // TODO: the default document loader should not invoke any network requests
     if (options.checkContext) {
-      if (!includeContext(document, [CONTEXT_URL.SUITE_2020, VC_BASE_URL.CID_V1])) {
-        throw new SuiteError(
-          ErrorCode.FORMAT_ERROR,
-          "Ed25519Keypair.import",
-          "The context is not supported!",
+      const res = await document.validateContext(inputDocument, VC_BASE_URL.CID_V1, false, loader.fallback)
+      if (!res.validated) {
+        throw new ImplementationError(
+          ImplementationErrorCode.INVALID_KEYPAIR_CONTENT,
+          "Ed25519Keypair#import",
+          "The JSON-LD context is not supported by this application!",
         )
       }
     }
 
-    // check the type
-    if (document.type !== KEY_CONSTANT.TYPE_BASIC && document.type !== KEY_CONSTANT.TYPE_JWK) {
-      throw new SuiteError(
-        ErrorCode.FORMAT_ERROR,
-        "Ed25519Keypair.import",
-        "The keypair type is not supported!",
+    // load the verification method from the controlled identifier document
+    // TODO: methods should be chosen based on the given fragment identifier
+    const method = inputDocument.verificationMethod?.[0]
+    if (!method) {
+      throw new ImplementationError(
+        ImplementationErrorCode.INVALID_KEYPAIR_CONTENT,
+        "Ed25519Keypair#import",
+        "The verification method is missing from the input controlled identifier document!",
       )
     }
 
     // check the revocation status
-    const revoked = document.revoked ? new Date(document.revoked) : undefined
-    if (revoked && options.checkRevoked && revoked < new Date()) {
-      throw new SuiteError(
-        ErrorCode.EXPIRED_KEYPAIR,
-        "Ed25519Keypair.import",
-        "The keypair has been revoked!",
-      )
+    // TODO: should also check the expiration status
+    const revoked = method.revoked ? new Date(method.revoked) : undefined
+    if (options.checkRevoked) {
+      if (revoked && revoked < new Date()) {
+        throw new ImplementationError(
+          ImplementationErrorCode.KEYPAIR_EXPIRED_ERROR,
+          "Ed25519Keypair#import",
+          "The keypair represented by the verification method has been revoked!",
+        )
+      }
     }
 
-    if (options.type === "jwk") {
-      return Ed25519Keypair.fromJwk(document, revoked)
-    } else if (options.type === "multibase") {
-      return Ed25519Keypair.fromMultibase(document, revoked)
+    // import the keypair from the verification method
+    if (method.type === SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_MULTI) {
+      return core.multibaseToKeypair(method as VerificationMethodMultibase, revoked)
+    } else if (method.type === SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_JWK) {
+      return core.jwkToKeypair(method as VerificationMethodJwk, revoked)
     } else {
-      throw new SuiteError(
-        ErrorCode.DECODING_ERROR,
-        "Ed25519Keypair.import",
-        "The key material is missing from the multibase object!",
+      throw new ImplementationError(
+        ImplementationErrorCode.KEYPAIR_IMPORT_ERROR,
+        "Ed25519Keypair#import",
+        "The keypair type is not supported!",
       )
     }
-  }
-
-  /**
-   * Calculate the multibase encoded public key.
-   *
-   * @returns {Promise<string>} Resolve to the multibase encoded public key string.
-   */
-  private async getPublicKeyMultibase(): Promise<string> {
-    if (!this.publicKey) {
-      throw new SuiteError(
-        ErrorCode.LOGIC_ERROR,
-        "Ed25519Keypair.getPublicKeyMultibase",
-        "Public key has not been generated!",
-      )
-    }
-    const material = await keyToMaterial(this.publicKey, "public")
-    return materialToMultibase(material, "public")
-  }
-
-  /**
-   * Calculate the multibase encoded private key.
-   *
-   * @returns {Promise<string>} Resolve to the multibase encoded private key string.
-   */
-  private async getPrivateKeyMultibase(): Promise<string> {
-    if (!this.privateKey) {
-      throw new SuiteError(
-        ErrorCode.LOGIC_ERROR,
-        "EW25519Keypair.getPrivateKeyMultibase",
-        "Keypair has not been generated!",
-      )
-    }
-    const material = await keyToMaterial(this.privateKey, "private")
-    return materialToMultibase(material, "private")
-  }
-
-  /**
-   * Export a keypair instance into a verification method containing a keypair in JWK format.
-   *
-   * @param {KeyFlag} flag The flag to determine if the key is private or public.
-   *
-   * @returns {Promise<VerificationMethodJwk>} Resolve to a verification method containing a keypair in JWK format.
-   */
-  private async toJwk(flag: KeyFlag): Promise<VerificationMethodJwk> {
-    const document: VerificationMethodJwk = {
-      id: this.id!,
-      type: KEY_CONSTANT.TYPE_JWK,
-      controller: this.controller!,
-      revoked: this.revoked ? toW3CTimestampString(this.revoked) : undefined,
-    }
-
-    if (flag === "private") {
-      document.secretKeyJwk = await keyToJwk(this.privateKey!, "private")
-    }
-    document.publicKeyJwk = await keyToJwk(this.publicKey!, "public")
-    document.id = `${this.controller!}#${await getJwkThumbprint(document.publicKeyJwk)}`
-
-    return document
-  }
-
-  /**
-   * Export a keypair instance into a verification method containing a keypair in multibase format.
-   *
-   * @param {KeyFlag} flag The flag to determine if the key is private or public.
-   *
-   * @returns {Promise<VerificationMethodMultibase>} Resolve to a verification method containing a keypair in multibase
-   * format.
-   */
-  private async toMultibase(flag: KeyFlag): Promise<VerificationMethodMultibase> {
-    const document: VerificationMethodMultibase = {
-      id: this.id!,
-      type: this.type,
-      controller: this.controller!,
-      revoked: this.revoked ? toW3CTimestampString(this.revoked) : undefined,
-    }
-
-    if (flag === "private") {
-      document.secretKeyMultibase = await this.getPrivateKeyMultibase()
-    }
-    document.publicKeyMultibase = await this.getPublicKeyMultibase()
-    return document
-  }
-
-  /**
-   * Import a keypair from a serialized verification method containing a keypair in JWK format.
-   *
-   * @param {VerificationMethodJwk} document An externally fetched key document.
-   * @param {Date} revoked The revoked date of the keypair.
-   *
-   * @returns {Promise<Ed25519Keypair>} Resolve to a keypair instance.
-   */
-  private static async fromJwk(document: VerificationMethodJwk, revoked?: Date): Promise<Ed25519Keypair> {
-    const keypair = new Ed25519Keypair(document.id, document.controller, revoked)
-
-    // private key
-    if (document.secretKeyJwk) {
-      const jwk = document.secretKeyJwk as JWKEC
-      keypair.privateKey = await jwkToKey(jwk, "private")
-    }
-
-    // public key
-    if (document.publicKeyJwk) {
-      const jwk = document.publicKeyJwk as JWKEC
-      keypair.publicKey = await jwkToKey(jwk, "public")
-    }
-
-    // missing key material
-    if (!document.secretKeyJwk && !document.publicKeyJwk) {
-      throw new SuiteError(
-        ErrorCode.DECODING_ERROR,
-        "Ed25519Keypair.import",
-        "The key material is missing from the JWK object!",
-      )
-    }
-
-    return keypair
-  }
-
-  /**
-   * Import a keypair from a serialized `KeypairDocument` object containing a keypair in multibase format.
-   *
-   * @param {VerificationMethodMultibase} document An externally fetched key document.
-   * @param {Date} revoked The revoked date of the keypair.
-   *
-   * @returns {Promise<Ed25519Keypair>} Resolve to a keypair instance.
-   */
-  private static async fromMultibase(document: VerificationMethodMultibase, revoked?: Date): Promise<Ed25519Keypair> {
-    const keypair = new Ed25519Keypair(document.id, document.controller, revoked)
-
-    // private key
-    if (document.secretKeyMultibase) {
-      const material = multibaseToMaterial(document.secretKeyMultibase!, "private")
-      keypair.privateKey = await materialToKey(material, "private")
-    }
-
-    // public key
-    if (document.publicKeyMultibase) {
-      const material = multibaseToMaterial(document.publicKeyMultibase!, "public")
-      keypair.publicKey = await materialToKey(material, "public")
-    }
-
-    // missing key material
-    if (!document.secretKeyMultibase && !document.publicKeyMultibase) {
-      throw new SuiteError(
-        ErrorCode.DECODING_ERROR,
-        "Ed25519Keypair.import",
-        "The key material is missing from the multibase object!",
-      )
-    }
-
-    return keypair
   }
 }

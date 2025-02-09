@@ -19,7 +19,7 @@ import * as SUITE_CONSTANT from "../constants/suite.ts"
  *
  * @see https://www.w3.org/TR/vc-di-eddsa/#eddsa-rdfc-2022
  */
-export class Ed25519RdfcSuite extends Cryptosuite {
+export class EddsaRdfc2022 extends Cryptosuite {
   static override readonly cryptosuite: string = SUITE_CONSTANT.NAME_RDFC
 
   /**
@@ -101,7 +101,7 @@ export class Ed25519RdfcSuite extends Cryptosuite {
     //    form.
     // 3. Return `canonicalDocument` as the transformed data document.
 
-    if (options.proof.type !== Ed25519RdfcSuite.type || options.proof.cryptosuite !== Ed25519RdfcSuite.cryptosuite) {
+    if (options.proof.type !== EddsaRdfc2022.type || options.proof.cryptosuite !== EddsaRdfc2022.cryptosuite) {
       // TODO: basic error handling
       throw new Error("PROOF_TRANSFORMATION_ERROR")
     }
@@ -139,7 +139,7 @@ export class Ed25519RdfcSuite extends Cryptosuite {
 
     const proofConfig = { ...options.proof }
 
-    if (proofConfig.type !== Ed25519RdfcSuite.type || proofConfig.cryptosuite !== Ed25519RdfcSuite.cryptosuite) {
+    if (proofConfig.type !== EddsaRdfc2022.type || proofConfig.cryptosuite !== EddsaRdfc2022.cryptosuite) {
       throw new Error("PROOF_GENERATION_ERROR")
     }
 
