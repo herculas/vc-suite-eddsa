@@ -15,3 +15,5 @@ export const KEYPAIR_DOCUMENT_TYPE_JWK = "JsonWebKey"
 
 export const RDFC = "eddsa-rdfc-2022"
 export const JCS = "eddsa-jcs-2022"
+
+export const GENERAL_PROOF_TYPE = "DataIntegrityProof"

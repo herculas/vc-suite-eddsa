@@ -1,135 +1,124 @@
-import { assert } from "@std/assert/assert"
-import {
-  canonize,
-  concatenate,
-  type PlainDocument,
-  type Proof,
-  Purpose,
-  sha256,
-  toW3CTimestampString,
-} from "@crumble-jon/ld-crypto-syntax"
+import { assert, assertEquals } from "@std/assert"
+import type { Credential, Proof } from "@herculas/vc-data-integrity"
 
-import { Ed25519Keypair } from "../src/key/keypair.ts"
-import { sign, verify } from "../src/utils/crypto.ts"
-import { loader } from "./mock/loader.ts"
-import { Ed25519Signature } from "../src/suite/rdfc.ts"
+import { base58btc } from "../src/utils/encode.ts"
+import { configRDFC, hash, serialize, transformRDFC, verify } from "../src/suite/core.ts"
+import { EddsaRdfc2022 } from "../src/mod.ts"
+import { testLoader } from "./mock/loader.ts"
+import { EddsaJcs2022 } from "../src/suite/jcs.ts"
 
-Deno.test("core signing and verifying", async () => {
-  const keypair = new Ed25519Keypair()
-  await keypair.initialize()
+import * as UNSECURED_CRED_1 from "./mock/unsecured-credential-1.json" with { type: "json" }
+import * as UNSECURED_CRED_2 from "./mock/unsecured-credential-2.json" with { type: "json" }
+import * as PROOF_OPTIONS_1 from "./mock/proof-options-1.json" with { type: "json" }
+import * as PROOF_OPTIONS_2 from "./mock/proof-options-2.json" with { type: "json" }
 
-  const message = new Uint8Array(1024)
-  crypto.getRandomValues(message)
+const bytesToHex = (arr: Uint8Array) => arr.reduce((acc, i) => acc + i.toString(16).padStart(2, "0"), "")
+const hexToBytes = (hex: string) => new Uint8Array(hex.match(/.{1,2}/g)!.map((byte) => parseInt(byte, 16)))
 
-  const signature = await sign(message, keypair.privateKey)
-  const result = await verify(message, signature, keypair.publicKey)
+Deno.test("EdDSA-RDFC-2022 document and proof hashing", async () => {
+  const unsecuredCredential = structuredClone(UNSECURED_CRED_1.default) as Credential
+  const proofOptions = structuredClone(PROOF_OPTIONS_1.default) as Proof
 
-  console.log("signature:", signature)
+  const transformOptions = { proof: proofOptions, documentLoader: testLoader }
+  const canonicalDocument = await transformRDFC(unsecuredCredential, transformOptions)
+  const canonicalProofConfig = await configRDFC(unsecuredCredential, transformOptions)
+
+  const hashData = await hash(canonicalDocument, canonicalProofConfig)
+
+  const expectedDocumentHash = "517744132ae165a5349155bef0bb0cf2258fff99dfe1dbd914b938d775a36017"
+  const expectedProofHash = "bea7b7acfbad0126b135104024a5f1733e705108f42d59668b05c0c50004c6b0"
+
+  assertEquals(bytesToHex(hashData), expectedProofHash + expectedDocumentHash)
+})
+
+Deno.test("EdDSA-RDFC-2022 proof creation", async () => {
+  const proofOptions = structuredClone(PROOF_OPTIONS_1.default) as Proof
+
+  const documentHash = "517744132ae165a5349155bef0bb0cf2258fff99dfe1dbd914b938d775a36017"
+  const proofHash = "bea7b7acfbad0126b135104024a5f1733e705108f42d59668b05c0c50004c6b0"
+  const hashData = proofHash + documentHash
+
+  const transformOptions = { proof: proofOptions, documentLoader: testLoader }
+  const proofBytes = await serialize(hexToBytes(hashData), transformOptions)
+
+  assertEquals(
+    base58btc.encode(proofBytes),
+    "z2YwC8z3ap7yx1nZYCg4L3j3ApHsF8kgPdSb5xoS1VR7vPG3F561B52hYnQF9iseabecm3ijx4K1FBTQsCZahKZme",
+  )
+})
+
+Deno.test("EdDSA-RDFC-2022 proof verification", async () => {
+  const proofOptions = structuredClone(PROOF_OPTIONS_1.default) as Proof
+
+  const documentHash = "517744132ae165a5349155bef0bb0cf2258fff99dfe1dbd914b938d775a36017"
+  const proofHash = "bea7b7acfbad0126b135104024a5f1733e705108f42d59668b05c0c50004c6b0"
+  const proofEncoded = "z2YwC8z3ap7yx1nZYCg4L3j3ApHsF8kgPdSb5xoS1VR7vPG3F561B52hYnQF9iseabecm3ijx4K1FBTQsCZahKZme"
+
+  const hashData = hexToBytes(proofHash + documentHash)
+  const proofBytes = base58btc.decode(proofEncoded)
+
+  const verifyOptions = { proof: proofOptions, documentLoader: testLoader }
+  const result = await verify(hashData, proofBytes, verifyOptions)
+
+  assert(result)
+})
+
+Deno.test("EdDSA-RDFC-2022 proof creation and verification: encapsulated", async () => {
+  const unsecuredCredential = structuredClone(UNSECURED_CRED_1.default) as Credential
+  const proofOptions = structuredClone(PROOF_OPTIONS_1.default) as Proof
+
+  const proveOptions = { proof: proofOptions, documentLoader: testLoader }
+  const proof = await EddsaRdfc2022.createProof(unsecuredCredential, proveOptions)
+
+  const securedCredential = unsecuredCredential
+  securedCredential.proof = proof
+
+  const verifyOptions = { documentLoader: testLoader }
+  const result = await EddsaRdfc2022.verifyProof(securedCredential, verifyOptions)
+
   assert(result.verified)
+  assertEquals(
+    securedCredential.proof.proofValue,
+    "z2YwC8z3ap7yx1nZYCg4L3j3ApHsF8kgPdSb5xoS1VR7vPG3F561B52hYnQF9iseabecm3ijx4K1FBTQsCZahKZme",
+  )
 })
 
-Deno.test("basic signing and verifying", async () => {
-  const keypair = new Ed25519Keypair()
-  await keypair.initialize()
+Deno.test("EdDSA-RDFC-2022 proof creation and verification: encapsulated 2", async () => {
+  const unsecuredCredential = structuredClone(UNSECURED_CRED_2.default) as Credential
+  const proofOptions = structuredClone(PROOF_OPTIONS_1.default) as Proof
 
-  const credential: PlainDocument = {
-    "@context": [
-      "https://www.w3.org/ns/credentials/v2",
-      "https://www.w3.org/ns/credentials/examples/v2",
-    ],
-    "id": "http://university.example/credentials/58473",
-    "type": ["VerifiableCredential", "ExampleAlumniCredential"],
-    "issuer": "did:example:1145141919810",
-    "validFrom": "2010-01-01T00:00:00Z",
-    "credentialSubject": {
-      "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
-      "alumniOf": {
-        "id": "did:example:c276e12ec21ebfeb1f712ebc6f1",
-        "name": "Example University",
-      },
-    },
-  }
+  const proveOptions = { proof: proofOptions, documentLoader: testLoader }
+  const proof = await EddsaRdfc2022.createProof(unsecuredCredential, proveOptions)
 
-  const proof: Proof = {
-    "@context": "https://www.w3.org/ns/credentials/v2",
-    type: "DataIntegrityProof",
-    cryptosuite: "Ed25519Signature2020",
-    proofPurpose: "assertionMethod",
-    created: toW3CTimestampString(new Date()),
-    proofValue: undefined,
-  }
+  const securedCredential = unsecuredCredential
+  securedCredential.proof = proof
 
-  const canonizedDocument = await canonize(credential, {
-    algorithm: "URDNA2015",
-    format: "application/n-quads",
-    documentLoader: loader,
-    skipExpansion: false,
-  })
+  const verifyOptions = { documentLoader: testLoader }
+  const result = await EddsaRdfc2022.verifyProof(securedCredential, verifyOptions)
 
-  console.log(proof)
-
-  const canonizedProof = await canonize(proof, {
-    algorithm: "URDNA2015",
-    format: "application/n-quads",
-    documentLoader: loader,
-    skipExpansion: false,
-  })
-
-  const hashedDocument = await sha256(canonizedDocument)
-  const hashedProof = await sha256(canonizedProof)
-  const verifyData = concatenate(hashedDocument, hashedProof)
-  proof.proofValue = await sign(verifyData, keypair.privateKey)
-
-  const signature = proof.proofValue
-  delete proof.proofValue
-
-  console.log(proof)
-
-  const recoveredCanonizedProof = await canonize(proof, {
-    algorithm: "URDNA2015",
-    format: "application/n-quads",
-    documentLoader: loader,
-    skipExpansion: false,
-  })
-
-  const recoveredHashedProof = await sha256(recoveredCanonizedProof)
-  const recoveredVerifyData = concatenate(hashedDocument, recoveredHashedProof)
-
-  console.log(verifyData)
-  console.log(recoveredVerifyData)
-
-  const result = await verify(recoveredVerifyData, signature, keypair.publicKey)
-
-  console.log(result)
+  assert(result.verified)
+  assertEquals(
+    securedCredential.proof.proofValue,
+    "zeuuS9pi2ZR8Q41bFFJKS9weSWkwa7pRcxHTHzxjDEHtVSZp3D9Rm3JdzT82EQpmXMb9wvfFJLuDPeSXZaRX1q1c",
+  )
 })
 
-Deno.test("ensemble signing and verifying", async () => {
-  const keypair = new Ed25519Keypair()
-  await keypair.initialize()
+Deno.test("EdDSA-JCS-2022 proof creation and verification: encapsulated", async () => {
+  const unsecuredCredential = structuredClone(UNSECURED_CRED_1.default) as Credential
+  const proofOptions = structuredClone(PROOF_OPTIONS_2.default) as Proof
 
-  const credential: PlainDocument = {
-    "@context": [
-      "https://www.w3.org/ns/credentials/v2",
-      "https://www.w3.org/ns/credentials/examples/v2",
-    ],
-    "id": "http://university.example/credentials/58473",
-    "type": ["VerifiableCredential", "ExampleAlumniCredential"],
-    "issuer": "did:example:1145141919810",
-    "validFrom": "2010-01-01T00:00:00Z",
-    "credentialSubject": {
-      "id": "did:example:ebfeb1f712ebc6f1c276e12ec21",
-      "alumniOf": {
-        "id": "did:example:c276e12ec21ebfeb1f712ebc6f1",
-        "name": "Example University",
-      },
-    },
-  }
+  const proveOptions = { proof: proofOptions, documentLoader: testLoader }
+  const proof = await EddsaJcs2022.createProof(unsecuredCredential, proveOptions)
 
-  const suite = new Ed25519Signature(keypair)
-  const purpose = new Purpose("assertionMethod")
-  const proof = await suite.createProof(credential, { purpose, loader })
-  console.log(proof)
+  const securedCredential = unsecuredCredential
+  securedCredential.proof = proof
 
-  const result = await suite.verifyProof(credential, proof, { purpose, loader })
-  console.log(result)
+  const verifyOptions = { documentLoader: testLoader }
+  const result = await EddsaJcs2022.verifyProof(securedCredential, verifyOptions)
+
+  assert(result.verified)
+  assertEquals(
+    securedCredential.proof.proofValue,
+    "z2HnFSSPPBzR36zdDgK8PbEHeXbR56YF24jwMpt3R1eHXQzJDMWS93FCzpvJpwTWd3GAVFuUfjoJdcnTMuVor51aX",
+  )
 })

@@ -1,4 +1,3 @@
-import { decodeBase58, encodeBase58, encodeBase64Url } from "@std/encoding"
 import {
   format,
   ImplementationError,
@@ -10,9 +9,11 @@ import {
   type VerificationMethodMultibase,
 } from "@herculas/vc-data-integrity"
 
+import { base58btc, base64url } from "../utils/encode.ts"
+import { Ed25519Keypair } from "./keypair.ts"
+
 import * as PREFIX_CONSTANT from "../constant/prefix.ts"
 import * as SUITE_CONSTANT from "../constant/suite.ts"
-import { Ed25519Keypair } from "../key/keypair.ts"
 
 /**
  * Generate a Ed25519 keypair using the Web Crypto API.
@@ -97,7 +98,7 @@ export function materialToMultibase(material: Uint8Array, flag: KeypairOptions.F
   }
 
   const bytes = format.concatenate(multibasePrefix, material)
-  return PREFIX_CONSTANT.BASE_58_BTC + encodeBase58(bytes)
+  return base58btc.encode(bytes)
 }
 
 /**
@@ -111,14 +112,7 @@ export function materialToMultibase(material: Uint8Array, flag: KeypairOptions.F
  * @returns {Uint8Array} The decoded key in Uint8Array format.
  */
 export function multibaseToMaterial(multibase: string, flag: KeypairOptions.Flag): Uint8Array {
-  if (!multibase.startsWith(PREFIX_CONSTANT.BASE_58_BTC)) {
-    throw new ImplementationError(
-      ImplementationErrorCode.DECODING_ERROR,
-      "keypair/core#multibaseToMaterial",
-      "Invalid multibase Base58 Bitcoin prefix!",
-    )
-  }
-  const key = decodeBase58(multibase.slice(PREFIX_CONSTANT.BASE_58_BTC.length))
+  const key = base58btc.decode(multibase)
   const expectedPrefix = flag === "private"
     ? PREFIX_CONSTANT.PRIVATE_KEY_MULTIBASE
     : PREFIX_CONSTANT.PUBLIC_KEY_MULTIBASE
@@ -144,7 +138,7 @@ export function multibaseToMaterial(multibase: string, flag: KeypairOptions.Flag
 export async function getJwkThumbprint(jwk: JWK): Promise<string> {
   const data = new TextEncoder().encode(JSON.stringify(jwk))
   const hash = await crypto.subtle.digest("SHA-256", data)
-  return encodeBase64Url(new Uint8Array(hash))
+  return base64url.encode(new Uint8Array(hash))
 }
 
 /**
@@ -232,6 +226,7 @@ export async function keypairToJwk(
     id: keypair.id!,
     type: SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_JWK,
     controller: keypair.controller!,
+    expires: keypair.expires ? keypair.expires.toISOString() : undefined,
     revoked: keypair.revoked ? keypair.revoked.toISOString() : undefined,
   }
 
@@ -272,15 +267,17 @@ export async function keypairToJwk(
  * Import a keypair from a serialized verification method containing a keypair in JWK format.
  *
  * @param {VerificationMethodJwk} verificationMethod A verification method fetched from an external source.
+ * @param {Date} [expires] The expiration date of the keypair.
  * @param {Date} [revoked] The revoked date of the keypair.
  *
  * @returns {Promise<Ed25519Keypair>} Resolve to a keypair instance.
  */
 export async function jwkToKeypair(
   verificationMethod: VerificationMethodJwk,
+  expires?: Date,
   revoked?: Date,
 ): Promise<Ed25519Keypair> {
-  const keypair = new Ed25519Keypair(verificationMethod.id, verificationMethod.controller, revoked)
+  const keypair = new Ed25519Keypair(verificationMethod.id, verificationMethod.controller, expires, revoked)
 
   const innerImport = async (jwk: JWK, flag: KeypairOptions.Flag) => {
     let convertedJwk: JWKEC
@@ -344,6 +341,7 @@ export async function keypairToMultibase(
     id: keypair.id!,
     type: SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_MULTI,
     controller: keypair.controller!,
+    expires: keypair.expires ? keypair.expires.toISOString() : undefined,
     revoked: keypair.revoked ? keypair.revoked.toISOString() : undefined,
   }
 
@@ -386,14 +384,16 @@ export async function keypairToMultibase(
  *
  * @param {VerificationMethodMultibase} verificationMethod A verification method fetched from an external source.
  * @param {Date} [revoked] The revoked date of the keypair.
+ * @param {Date} [revoked] The revoked date of the keypair.
  *
  * @returns {Promise<Ed25519Keypair>} Resolve to a keypair instance.
  */
 export async function multibaseToKeypair(
   verificationMethod: VerificationMethodMultibase,
+  expires?: Date,
   revoked?: Date,
 ): Promise<Ed25519Keypair> {
-  const keypair = new Ed25519Keypair(verificationMethod.id, verificationMethod.controller, revoked)
+  const keypair = new Ed25519Keypair(verificationMethod.id, verificationMethod.controller, expires, revoked)
 
   // import the private key if it is presented
   if (verificationMethod.secretKeyMultibase) {

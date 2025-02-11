@@ -1,15 +1,18 @@
-import * as KEYPAIR from "./keypair.json" with { type: "json" }
+import { type JsonLdDocument, loader } from "@herculas/vc-data-integrity"
 
-export const testLoader = extend((url) => {
-  const document = new Map<string, object>([
-    ["did:example:1145141919810", KEYPAIR.default],
+import * as CID_FILE from "./cid.json" with { type: "json" }
+import * as CITIZENSHIP from "./context-citizenship.json" with { type: "json" }
+
+export const testLoader = loader.extend((url) => {
+  const document = new Map<string, JsonLdDocument>([
+    ["did:key:z6MkrJVnaZkeFzdQyMZu1cgjg7k1pZZ6pvBQ7XJPt4swbTQ2", CID_FILE.default],
+    ["https://w3id.org/citizenship/v4rc1", CITIZENSHIP.default],
   ])
 
   if (document.has(url)) {
-    const context = document.get(url)!
     return Promise.resolve({
-      document: context,
       documentUrl: url,
+      document: document.get(url)!,
     })
   }
   throw new Error(

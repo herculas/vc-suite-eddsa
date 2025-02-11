@@ -1,5 +1,4 @@
 import {
-  type CIDDocument,
   type DIDURL,
   document,
   ImplementationError,
@@ -9,18 +8,23 @@ import {
   loader,
   type URI,
   VC_BASE_URL,
+  type VerificationMethod,
   type VerificationMethodJwk,
   type VerificationMethodMultibase,
-  type VerificationRelationship,
 } from "@herculas/vc-data-integrity"
 
-import * as core from "../utils/key.ts"
+import * as core from "./core.ts"
 import * as SUITE_CONSTANT from "../constant/suite.ts"
 
 /**
  * The Ed25519 keypair class. The secret key is a scalar, and the public key is a point on the Ed25519 curve.
  */
 export class Ed25519Keypair extends Keypair {
+  /**
+   * The type of the cryptographic suite used by the keypair instances.
+   */
+  static override readonly type = SUITE_CONSTANT.KEYPAIR_TYPE
+
   /**
    * The Ed25519 public key.
    */
@@ -32,18 +36,13 @@ export class Ed25519Keypair extends Keypair {
   privateKey?: CryptoKey
 
   /**
-   * The type of the cryptographic suite used by the keypair instances.
-   */
-  static override readonly type = SUITE_CONSTANT.KEYPAIR_TYPE
-
-  /**
    * @param {URI} [_id] The identifier of the keypair.
    * @param {DIDURL} [_controller] The controller of the keypair.
+   * @param {Date} [_expires] The date and time when the keypair expires.
    * @param {Date} [_revoked] The date and time when the keypair has been revoked.
    */
-  constructor(_id?: URI, _controller?: DIDURL, _revoked?: Date) {
-    super(_id, _controller, _revoked)
-    // TODO: add expiration date
+  constructor(_id?: URI, _controller?: DIDURL, _expires?: Date, _revoked?: Date) {
+    super(_id, _controller, _expires, _revoked)
   }
 
   /**
@@ -97,9 +96,9 @@ export class Ed25519Keypair extends Keypair {
    *
    * @param {KeypairOptions.Export} options The options to export the keypair.
    *
-   * @returns {Promise<CIDDocument>} Resolve to a serialized keypair to be exported.
+   * @returns {Promise<VerificationMethod>} Resolve to a verification method containing the serialized keypair.
    */
-  override async export(options?: KeypairOptions.Export): Promise<CIDDocument> {
+  override export(options?: KeypairOptions.Export): Promise<VerificationMethod> {
     // set default options
     options ||= {}
     options.flag ||= "public"
@@ -123,20 +122,11 @@ export class Ed25519Keypair extends Keypair {
       )
     }
 
-    // initialize the exported document
-    const document: CIDDocument = {
-      "@context": VC_BASE_URL.CID_V1,
-      id: this.controller,
-      verificationMethod: [],
-    }
-
     // generate the verification method
     if (options.type === SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_MULTI) {
-      const verificationMethod = await core.keypairToMultibase(this, options.flag)
-      document.verificationMethod!.push(verificationMethod)
+      return core.keypairToMultibase(this, options.flag)
     } else if (options.type === SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_JWK) {
-      const verificationMethod = await core.keypairToJwk(this, options.flag)
-      document.verificationMethod!.push(verificationMethod)
+      return core.keypairToJwk(this, options.flag)
     } else {
       throw new ImplementationError(
         ImplementationErrorCode.KEYPAIR_EXPORT_ERROR,
@@ -144,77 +134,64 @@ export class Ed25519Keypair extends Keypair {
         "The keypair type is not supported!",
       )
     }
-
-    // iterate through the verification relationships in the export option
-    for (const relationshipName in options.relationship) {
-      document[relationshipName] = new Array<VerificationRelationship>()
-      document[relationshipName].push(document.verificationMethod![0].id)
-    }
-
-    // return the exported document
-    return document
   }
 
   /**
    * Import a keypair from a serialized representation of a keypair.
    *
-   * @param {CIDDocument} inputDocument A keypair document fetched from a external source.
+   * @param {VerificationMethod} inputDocument A verification method fetched from a external source.
    * @param {KeypairOptions.Import} options Options for keypair import.
    *
    * @returns {Promise<Ed25519Keypair>} Resolve to a Ed25519 keypair instance.
    */
-  static override async import(inputDocument: CIDDocument, options?: KeypairOptions.Import): Promise<Ed25519Keypair> {
+  static override async import(
+    inputDocument: VerificationMethod,
+    options?: KeypairOptions.Import,
+  ): Promise<Ed25519Keypair> {
     // set default options
     options ||= {}
-    options.checkContext ||= true
-    options.checkRevoked ||= false
 
     // validate the JSON-LD context
-    // TODO: the default document loader should not invoke any network requests
     if (options.checkContext) {
-      const res = await document.validateContext(inputDocument, VC_BASE_URL.CID_V1, false, loader.fallback)
+      const res = await document.validateContext(inputDocument, VC_BASE_URL.CID_V1, false, loader.basic)
       if (!res.validated) {
         throw new ImplementationError(
           ImplementationErrorCode.INVALID_KEYPAIR_CONTENT,
-          "Ed25519Keypair#import",
+          "Ed25519Keypair::import",
           "The JSON-LD context is not supported by this application!",
         )
       }
     }
 
-    // load the verification method from the controlled identifier document
-    // TODO: methods should be chosen based on the given fragment identifier
-    const method = inputDocument.verificationMethod?.[0]
-    if (!method) {
+    // check the expiration status
+    const expires = inputDocument.expires ? new Date(inputDocument.expires) : undefined
+    if (options.checkExpired && expires && expires < new Date()) {
       throw new ImplementationError(
-        ImplementationErrorCode.INVALID_KEYPAIR_CONTENT,
-        "Ed25519Keypair#import",
-        "The verification method is missing from the input controlled identifier document!",
+        ImplementationErrorCode.KEYPAIR_EXPIRED_ERROR,
+        "Ed25519Keypair::import",
+        "The keypair represented by the verification method has expired!",
       )
     }
 
     // check the revocation status
-    // TODO: should also check the expiration status
-    const revoked = method.revoked ? new Date(method.revoked) : undefined
-    if (options.checkRevoked) {
-      if (revoked && revoked < new Date()) {
-        throw new ImplementationError(
-          ImplementationErrorCode.KEYPAIR_EXPIRED_ERROR,
-          "Ed25519Keypair#import",
-          "The keypair represented by the verification method has been revoked!",
-        )
-      }
+    const revoked = inputDocument.revoked ? new Date(inputDocument.revoked) : undefined
+    if (options.checkRevoked && revoked && revoked < new Date()) {
+      throw new ImplementationError(
+        ImplementationErrorCode.KEYPAIR_EXPIRED_ERROR,
+        "Ed25519Keypair::import",
+        "The keypair represented by the verification method has been revoked!",
+      )
     }
 
     // import the keypair from the verification method
-    if (method.type === SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_MULTI) {
-      return core.multibaseToKeypair(method as VerificationMethodMultibase, revoked)
-    } else if (method.type === SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_JWK) {
-      return core.jwkToKeypair(method as VerificationMethodJwk, revoked)
+    if (inputDocument.type === SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_MULTI) {
+      return core.multibaseToKeypair(inputDocument as VerificationMethodMultibase, expires, revoked)
+    } else if (inputDocument.type === SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_JWK) {
+      return core.jwkToKeypair(inputDocument as VerificationMethodJwk, expires, revoked)
     } else {
       throw new ImplementationError(
         ImplementationErrorCode.KEYPAIR_IMPORT_ERROR,
-        "Ed25519Keypair#import",
+        "Ed25519Keypair::import",
         "The keypair type is not supported!",
       )
     }

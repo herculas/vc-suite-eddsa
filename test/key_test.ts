@@ -1,16 +1,12 @@
 import { assert, assertEquals, assertExists } from "@std/assert"
+import type { CIDDocument } from "@herculas/vc-data-integrity"
 
 import { Ed25519Keypair } from "../src/key/keypair.ts"
-import { generateRawKeypair, jwkToKey, keyToJwk } from "../src/utils/key.ts"
+import { generateRawKeypair, jwkToKey, keyToJwk } from "../src/key/core.ts"
 
 import * as TEST_CID_DOCUMENT from "./mock/cid.json" with { type: "json" }
 
-Deno.test("key gen", async () => {
-  const keypair = await generateRawKeypair()
-  console.log(keypair)
-})
-
-Deno.test("fingerprint", async () => {
+Deno.test("fingerprint generation and verification", async () => {
   const keypair = new Ed25519Keypair()
   await keypair.initialize()
   const fingerprint = await keypair.generateFingerprint()
@@ -18,7 +14,7 @@ Deno.test("fingerprint", async () => {
   assert(result)
 })
 
-Deno.test("jwk import and export", async () => {
+Deno.test("Keypair import and export: raw functions", async () => {
   const keypair = await generateRawKeypair()
 
   const jwkPrivate = await keyToJwk(keypair.privateKey, "private")
@@ -34,7 +30,7 @@ Deno.test("jwk import and export", async () => {
   assertEquals(jwkPublic, jwkPublic2)
 })
 
-Deno.test("Ed25519 keypair export", async () => {
+Deno.test("Keypair export: encapsulated", async () => {
   const keypair = new Ed25519Keypair()
   keypair.controller = "did:example:1145141919810"
   await keypair.initialize()
@@ -44,6 +40,8 @@ Deno.test("Ed25519 keypair export", async () => {
 
   const multibasePrivate = await keypair.export({ type: "Multikey", flag: "private" })
   const multibasePublic = await keypair.export({ type: "Multikey", flag: "public" })
+
+  console.log(jwkPrivate)
 
   assertExists(jwkPrivate)
   assertExists(jwkPublic)
@@ -51,7 +49,7 @@ Deno.test("Ed25519 keypair export", async () => {
   assertExists(multibasePublic)
 })
 
-Deno.test("Ed25519 keypair import 1: json web key", async () => {
+Deno.test("Keypair export and import: JSON Web Key", async () => {
   const keypair = new Ed25519Keypair()
   keypair.controller = "did:example:1145141919810"
   await keypair.initialize()
@@ -59,15 +57,15 @@ Deno.test("Ed25519 keypair import 1: json web key", async () => {
   const jwkPrivate = await keypair.export({ type: "JsonWebKey", flag: "private" })
   const jwkPublic = await keypair.export({ type: "JsonWebKey", flag: "public" })
 
-  const recoveredPublicOnly = await Ed25519Keypair.import(jwkPublic) as Ed25519Keypair
-  const recoveredBoth = await Ed25519Keypair.import(jwkPrivate) as Ed25519Keypair
+  const recoveredPublicOnly = await Ed25519Keypair.import(jwkPublic)
+  const recoveredBoth = await Ed25519Keypair.import(jwkPrivate)
 
   assertExists(recoveredPublicOnly.publicKey)
   assertExists(recoveredBoth.privateKey)
   assertExists(recoveredBoth.publicKey)
 })
 
-Deno.test("Ed25519 keypair import 2: multibase", async () => {
+Deno.test("Keypair export and import: Multibase", async () => {
   const keypair = new Ed25519Keypair()
   keypair.controller = "did:example:1145141919810"
   await keypair.initialize()
@@ -75,18 +73,22 @@ Deno.test("Ed25519 keypair import 2: multibase", async () => {
   const multibasePrivate = await keypair.export({ type: "Multikey", flag: "private" })
   const multibasePublic = await keypair.export({ type: "Multikey", flag: "public" })
 
-  const recoveredPublicOnly = await Ed25519Keypair.import(multibasePublic) as Ed25519Keypair
-  const recoveredBoth = await Ed25519Keypair.import(multibasePrivate) as Ed25519Keypair
+  const recoveredPublicOnly = await Ed25519Keypair.import(multibasePublic)
+  const recoveredBoth = await Ed25519Keypair.import(multibasePrivate)
 
   assertExists(recoveredPublicOnly.publicKey)
   assertExists(recoveredBoth.privateKey)
   assertExists(recoveredBoth.publicKey)
 })
 
-Deno.test("Ed25519 keypair import 3: from file", async () => {
-  const recoveredKey = await Ed25519Keypair.import(TEST_CID_DOCUMENT.default) as Ed25519Keypair
+Deno.test("Keypair import and verification", async () => {
+  const cid = TEST_CID_DOCUMENT.default as CIDDocument
+  const method = cid.verificationMethod![0]
+  const recoveredKey = await Ed25519Keypair.import(method)
+
   const data = crypto.getRandomValues(new Uint8Array(128))
   const signature = await crypto.subtle.sign("Ed25519", recoveredKey.privateKey!, data)
-  const verification = await crypto.subtle.verify("Ed25519", recoveredKey.publicKey!, signature, data)
-  assert(verification)
+  const result = await crypto.subtle.verify("Ed25519", recoveredKey.publicKey!, signature, data)
+
+  assert(result)
 })
