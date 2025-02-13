@@ -1,4 +1,6 @@
 import {
+  base58btc,
+  base64url,
   format,
   ImplementationError,
   ImplementationErrorCode,
@@ -9,7 +11,6 @@ import {
   type VerificationMethodMultibase,
 } from "@herculas/vc-data-integrity"
 
-import { base58btc, base64url } from "../utils/encode.ts"
 import { Ed25519Keypair } from "./keypair.ts"
 
 import * as PREFIX_CONSTANT from "../constant/prefix.ts"

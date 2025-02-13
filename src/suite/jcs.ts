@@ -1,4 +1,5 @@
 import {
+  base58btc,
   type Credential,
   Cryptosuite,
   instance,
@@ -9,8 +10,6 @@ import {
   type Proof,
   type Result,
 } from "@herculas/vc-data-integrity"
-
-import { base58btc } from "../utils/encode.ts"
 
 import * as core from "./core.ts"
 import * as SUITE_CONSTANT from "../constant/suite.ts"

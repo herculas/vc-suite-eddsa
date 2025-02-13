@@ -1,17 +1,18 @@
 {
   "version": "4",
   "specifiers": {
-    "jsr:@herculas/vc-data-integrity@~0.7.3": "0.7.3",
+    "jsr:@herculas/vc-data-integrity@~0.7.7": "0.7.7",
     "jsr:@std/assert@1": "1.0.10",
     "jsr:@std/encoding@^1.0.7": "1.0.7",
     "jsr:@std/internal@^1.0.5": "1.0.5",
     "npm:jsonld@^8.3.2": "8.3.3"
   },
   "jsr": {
-    "@herculas/vc-data-integrity@0.7.3": {
-      "integrity": "09977c2ae0cd2317b91adc8a68983543fd934099e35de1cbf3d8583bcb27d717",
+    "@herculas/vc-data-integrity@0.7.7": {
+      "integrity": "13a33424c27e8e17a9beede28a092c6ae32dd87d224772fd89a1d5c500004ccb",
       "dependencies": [
         "jsr:@std/assert",
+        "jsr:@std/encoding",
         "npm:jsonld"
       ]
     },
@@ -129,9 +130,8 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@herculas/vc-data-integrity@~0.7.3",
-      "jsr:@std/assert@1",
-      "jsr:@std/encoding@^1.0.7"
+      "jsr:@herculas/vc-data-integrity@~0.7.7",
+      "jsr:@std/assert@1"
     ]
   }
 }

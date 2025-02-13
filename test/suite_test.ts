@@ -1,7 +1,6 @@
 import { assert, assertEquals } from "@std/assert"
-import type { Credential, Proof } from "@herculas/vc-data-integrity"
+import { base58btc, type Credential, type Proof } from "@herculas/vc-data-integrity"
 
-import { base58btc } from "../src/utils/encode.ts"
 import { configRDFC, hash, serialize, transformRDFC, verify } from "../src/suite/core.ts"
 import { EddsaRdfc2022 } from "../src/mod.ts"
 import { testLoader } from "./mock/loader.ts"
