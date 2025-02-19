@@ -1,5 +1,4 @@
 import {
-  type DIDURL,
   document,
   ImplementationError,
   ImplementationErrorCode,
@@ -37,17 +36,16 @@ export class Ed25519Keypair extends Keypair {
 
   /**
    * @param {URI} [_id] The identifier of the keypair.
-   * @param {DIDURL} [_controller] The controller of the keypair.
+   * @param {URI} [_controller] The controller of the keypair.
    * @param {Date} [_expires] The date and time when the keypair expires.
    * @param {Date} [_revoked] The date and time when the keypair has been revoked.
    */
-  constructor(_id?: URI, _controller?: DIDURL, _expires?: Date, _revoked?: Date) {
+  constructor(_id?: URI, _controller?: URI, _expires?: Date, _revoked?: Date) {
     super(_id, _controller, _expires, _revoked)
   }
 
   /**
-   * Initialize the Ed25519 keypair using the Web Crypto API, set the public and private key material encoded in
-   * multibase format.
+   * Initialize the Ed25519 keypair using the Web Crypto API, set the public and private key material.
    */
   override async initialize() {
     const keypair = await core.generateRawKeypair()
@@ -94,7 +92,7 @@ export class Ed25519Keypair extends Keypair {
   /**
    * Export the serialized representation of the keypair, along with other metadata which can be used to form a proof.
    *
-   * @param {KeypairOptions.Export} options The options to export the keypair.
+   * @param {KeypairOptions.Export} [options] The options to export the keypair.
    *
    * @returns {Promise<VerificationMethod>} Resolve to a verification method containing the serialized keypair.
    */
@@ -109,7 +107,7 @@ export class Ed25519Keypair extends Keypair {
       throw new ImplementationError(
         ImplementationErrorCode.KEYPAIR_EXPORT_ERROR,
         "Ed25519Keypair.export",
-        "This keypair has not been initialized!",
+        `${options.flag} key material has not been generated!`,
       )
     }
 
@@ -137,10 +135,10 @@ export class Ed25519Keypair extends Keypair {
   }
 
   /**
-   * Import a keypair from a serialized representation of a keypair.
+   * Import an Ed25519 keypair from a serialized verification method.
    *
-   * @param {VerificationMethod} inputDocument A verification method fetched from a external source.
-   * @param {KeypairOptions.Import} options Options for keypair import.
+   * @param {VerificationMethod} inputDocument A verification method fetched from an external source.
+   * @param {KeypairOptions.Import} [options] Options for keypair import.
    *
    * @returns {Promise<Ed25519Keypair>} Resolve to a Ed25519 keypair instance.
    */

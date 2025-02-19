@@ -54,7 +54,7 @@ export async function keyToMaterial(key: CryptoKey, flag: KeypairOptions.Flag): 
 }
 
 /**
- * Recover a Ed25519 private or public key from the provided key material.
+ * Recover an Ed25519 private or public key from the provided key material.
  *
  * @param {Uint8Array} material The 32-octet public or private key material in Uint8Array format.
  * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
@@ -202,7 +202,7 @@ export async function jwkToKey(jwk: JWKEC, flag: KeypairOptions.Flag): Promise<C
 }
 
 /**
- * Export a Ed25519 keypair instance into a verification method containing a keypair in JWK format.
+ * Export an Ed25519 keypair instance into a verification method containing a keypair in JWK format.
  *
  * @param {Ed25519Keypair} keypair A Ed25519 keypair instance.
  * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
@@ -227,11 +227,12 @@ export async function keypairToJwk(
     id: keypair.id!,
     type: SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_JWK,
     controller: keypair.controller!,
-    expires: keypair.expires ? keypair.expires.toISOString() : undefined,
-    revoked: keypair.revoked ? keypair.revoked.toISOString() : undefined,
+    expires: keypair.expires ? format.toW3CTimestamp(keypair.expires) : undefined,
+    revoked: keypair.revoked ? format.toW3CTimestamp(keypair.revoked) : undefined,
   }
 
   // consider the following 5 cases:
+  //
   // 1. The `flag` is `private`, but the private key is missing. Throw an error.
   // 2. The `flag` is `private`, and the public key is missing. Export the private key only.
   // 3. The `flag` is `private`, and the public key is presented. Export the public key and set the `id` accordingly.
@@ -265,13 +266,13 @@ export async function keypairToJwk(
 }
 
 /**
- * Import a keypair from a serialized verification method containing a keypair in JWK format.
+ * Import an Ed25519 keypair from a serialized verification method containing a keypair in JWK format.
  *
  * @param {VerificationMethodJwk} verificationMethod A verification method fetched from an external source.
  * @param {Date} [expires] The expiration date of the keypair.
  * @param {Date} [revoked] The revoked date of the keypair.
  *
- * @returns {Promise<Ed25519Keypair>} Resolve to a keypair instance.
+ * @returns {Promise<Ed25519Keypair>} Resolve to an Ed25519 keypair instance.
  */
 export async function jwkToKeypair(
   verificationMethod: VerificationMethodJwk,
@@ -317,7 +318,7 @@ export async function jwkToKeypair(
 }
 
 /**
- * Export a keypair instance into a verification method containing a keypair in multibase format.
+ * Export an Ed25519 keypair instance into a verification method containing a keypair in multibase format.
  *
  * @param {Ed25519Keypair} keypair A Ed25519 keypair instance.
  * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
@@ -342,11 +343,12 @@ export async function keypairToMultibase(
     id: keypair.id!,
     type: SUITE_CONSTANT.KEYPAIR_DOCUMENT_TYPE_MULTI,
     controller: keypair.controller!,
-    expires: keypair.expires ? keypair.expires.toISOString() : undefined,
-    revoked: keypair.revoked ? keypair.revoked.toISOString() : undefined,
+    expires: keypair.expires ? format.toW3CTimestamp(keypair.expires) : undefined,
+    revoked: keypair.revoked ? format.toW3CTimestamp(keypair.revoked) : undefined,
   }
 
   // consider the following 5 cases:
+  //
   // 1. The `flag` is `private`, but the private key is missing. Throw an error.
   // 2. The `flag` is `private`, and the public key is missing. Export the private key only.
   // 3. The `flag` is `private`, and the public key is presented. Export the public key and set the `id` accordingly.
@@ -381,13 +383,13 @@ export async function keypairToMultibase(
 }
 
 /**
- * Import a keypair from a serialized verification method containing a keypair in multibase format.
+ * Import an Ed25519 keypair from a serialized verification method containing a keypair in multibase format.
  *
  * @param {VerificationMethodMultibase} verificationMethod A verification method fetched from an external source.
- * @param {Date} [revoked] The revoked date of the keypair.
+ * @param {Date} [revoked] The expiration date of the keypair.
  * @param {Date} [revoked] The revoked date of the keypair.
  *
- * @returns {Promise<Ed25519Keypair>} Resolve to a keypair instance.
+ * @returns {Promise<Ed25519Keypair>} Resolve to an Ed25519 keypair instance.
  */
 export async function multibaseToKeypair(
   verificationMethod: VerificationMethodMultibase,
