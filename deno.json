@@ -1,6 +1,6 @@
 {
-  "name": "@herculas/vc-suite-ed25519",
-  "version": "0.4.5",
+  "name": "@herculas/vc-suite-eddsa",
+  "version": "0.5.1",
   "license": "MIT",
   "exports": "./src/mod.ts",
   "tasks": {

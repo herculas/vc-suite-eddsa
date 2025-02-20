@@ -1,15 +1,17 @@
-# vc-suite-ed25519
+# Verifiable Credential Cryptosuite (EdDSA)
 
-[![Release](https://github.com/herculas/vc-suite-ed25519/actions/workflows/release.yml/badge.svg)](https://github.com/herculas/vc-suite-ed25519/actions/workflows/release.yml)
+[![Release](https://github.com/herculas/vc-suite-eddsa/actions/workflows/release.yml/badge.svg)](https://github.com/herculas/vc-suite-eddsa/actions/workflows/release.yml)
+[![JSR](https://jsr.io/badges/@herculas/vc-suite-eddsa)](https://jsr.io/@herculas/vc-suite-eddsa)
+[![JSR Score](https://jsr.io/badges/@herculas/vc-suite-eddsa/score)](https://jsr.io/@herculas/vc-suite-eddsa)
 
-Ed25519 cryptographic suite for linked data files. The interface is compatible with the W3C specification of
+EdDSA cryptographic suite for linked data files. The interface is compatible with the W3C specification of
 [JSON-LD](https://www.w3.org/TR/json-ld11/), [Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/),
 [Verifiable Credential Data Integrity](https://www.w3.org/TR/vc-data-integrity/) and
 [EdDSA Cryptosuite](https://www.w3.org/TR/vc-di-eddsa/).
 
 ## Introduction
 
-Ed25519 cryptosuite can be used to provide integrity and authenticity guarantees for linked data files. This package is
+EdDSA cryptosuite can be used to provide integrity and authenticity guarantees for linked data files. This package is
 designed to provide the EdDSA cryptographic suite. This suite SHOULD be used with the
 [vc-data-integrity](https://jsr.io/@herculas/vc-data-integrity) framework.
 
@@ -18,7 +20,7 @@ designed to provide the EdDSA cryptographic suite. This suite SHOULD be used wit
 To use this package within your own Deno project, run:
 
 ```shell
-deno add jsr:@herculas/vc-suite-ed25519
+deno add jsr:@herculas/vc-suite-eddsa
 ```
 
 ## Usage

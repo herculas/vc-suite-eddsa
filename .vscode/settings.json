@@ -3,6 +3,8 @@
     "cryptosuite",
     "denoland",
     "DIDURL",
+    "ecmqv",
+    "ECPK",
     "eddsa",
     "herculas",
     "JWKEC",
@@ -12,6 +14,8 @@
     "MULTIKEY",
     "Rdfc",
     "scure",
-    "URDNA"
+    "SECG",
+    "URDNA",
+    "varint"
   ]
 }

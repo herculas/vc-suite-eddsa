@@ -41,7 +41,10 @@ export class EddsaJcs2022 extends Cryptosuite {
    */
   static override async createProof(
     unsecuredDocument: JsonLdDocument,
-    options: { proof: Proof; documentLoader: Loader },
+    options: {
+      proof: Proof
+      documentLoader: Loader
+    },
   ): Promise<Proof> {
     // Procedure:
     //
@@ -65,8 +68,8 @@ export class EddsaJcs2022 extends Cryptosuite {
       cloneProof["@context"] = unsecuredCredential["@context"]
     }
 
-    const canonicalProofConfig = core.configJCS({ proof: cloneProof })
-    const canonicalDocument = core.transformJCS(unsecuredCredential, options)
+    const canonicalProofConfig = core.configJcs({ proof: cloneProof })
+    const canonicalDocument = core.transformJcs(unsecuredCredential, options)
     const hashData = await core.hash(canonicalDocument, canonicalProofConfig)
     const proofBytes = await core.serialize(hashData, options)
 
@@ -86,7 +89,9 @@ export class EddsaJcs2022 extends Cryptosuite {
    */
   static override async verifyProof(
     securedDocument: JsonLdDocument,
-    options: { documentLoader: Loader },
+    options: {
+      documentLoader: Loader
+    },
   ): Promise<Result.Verification> {
     // Procedure:
     //
@@ -163,8 +168,8 @@ export class EddsaJcs2022 extends Cryptosuite {
     }
 
     const transformOptions = { proof: proofOptions, documentLoader: options.documentLoader }
-    const canonicalDocument = core.transformJCS(unsecuredCredential, transformOptions)
-    const canonicalProofConfig = core.configJCS(transformOptions)
+    const canonicalDocument = core.transformJcs(unsecuredCredential, transformOptions)
+    const canonicalProofConfig = core.configJcs(transformOptions)
     const hashData = await core.hash(canonicalDocument, canonicalProofConfig)
     const verified = await core.verify(hashData, proofBytes, transformOptions)
 

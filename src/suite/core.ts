@@ -26,9 +26,12 @@ import * as SUITE_CONSTANT from "../constant/suite.ts"
  *
  * @see https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-rdfc-2022
  */
-export async function transformRDFC(
+export async function transformRdfc(
   unsecuredDocument: Credential,
-  options: { proof: Proof; documentLoader: Loader },
+  options: {
+    proof: Proof
+    documentLoader: Loader
+  },
 ): Promise<string> {
   // Procedure:
   //
@@ -68,7 +71,9 @@ export async function transformRDFC(
  *
  * @see https://www.w3.org/TR/vc-di-eddsa/#transformation-eddsa-jcs-2022
  */
-export function transformJCS(unsecuredDocument: Credential, options: { proof: Proof }): string {
+export function transformJcs(unsecuredDocument: Credential, options: {
+  proof: Proof
+}): string {
   // Procedure:
   //
   // 1. If `options.type` is not set to the string `DataIntegrityProof`, and `options.cryptosuite` is not set to the
@@ -100,9 +105,12 @@ export function transformJCS(unsecuredDocument: Credential, options: { proof: Pr
  *
  * @see https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-rdfc-2022
  */
-export async function configRDFC(
+export async function configRdfc(
   unsecuredDocument: Credential,
-  options: { proof: Proof; documentLoader: Loader },
+  options: {
+    proof: Proof
+    documentLoader: Loader
+  },
 ): Promise<string> {
   // Procedure:
   //
@@ -155,7 +163,9 @@ export async function configRDFC(
  *
  * @see https://www.w3.org/TR/vc-di-eddsa/#proof-configuration-eddsa-jcs-2022
  */
-export function configJCS(options: { proof: Proof }): string {
+export function configJcs(options: {
+  proof: Proof
+}): string {
   // Procedure:
   //
   // 1. Let `proofConfig` be a clone of the `options` object.
@@ -233,7 +243,10 @@ export async function hash(
  */
 export async function serialize(
   hashData: Uint8Array,
-  options: { proof: Proof; documentLoader: Loader },
+  options: {
+    proof: Proof
+    documentLoader: Loader
+  },
 ): Promise<Uint8Array> {
   // Procedure:
   //
@@ -274,7 +287,10 @@ export async function serialize(
 export async function verify(
   hashData: Uint8Array,
   proofBytes: Uint8Array,
-  options: { proof: Proof; documentLoader: Loader },
+  options: {
+    proof: Proof
+    documentLoader: Loader
+  },
 ): Promise<boolean> {
   // Procedure:
   //

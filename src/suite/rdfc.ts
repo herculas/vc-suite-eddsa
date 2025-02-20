@@ -38,7 +38,10 @@ export class EddsaRdfc2022 extends Cryptosuite {
    */
   static override async createProof(
     unsecuredDocument: JsonLdDocument,
-    options: { proof: Proof; documentLoader: Loader },
+    options: {
+      proof: Proof
+      documentLoader: Loader
+    },
   ): Promise<Proof> {
     // Procedure:
     //
@@ -56,8 +59,8 @@ export class EddsaRdfc2022 extends Cryptosuite {
 
     const proof = structuredClone(options.proof)
 
-    const canonicalProofConfig = await core.configRDFC(unsecuredDocument as Credential, options)
-    const canonicalDocument = await core.transformRDFC(unsecuredDocument as Credential, options)
+    const canonicalProofConfig = await core.configRdfc(unsecuredDocument as Credential, options)
+    const canonicalDocument = await core.transformRdfc(unsecuredDocument as Credential, options)
     const hashData = await core.hash(canonicalDocument, canonicalProofConfig)
     const proofBytes = await core.serialize(hashData, options)
 
@@ -77,7 +80,9 @@ export class EddsaRdfc2022 extends Cryptosuite {
    */
   static override async verifyProof(
     securedDocument: JsonLdDocument,
-    options: { documentLoader: Loader },
+    options: {
+      documentLoader: Loader
+    },
   ): Promise<Result.Verification> {
     // Procedure:
     //
@@ -106,8 +111,8 @@ export class EddsaRdfc2022 extends Cryptosuite {
     const proofBytes = base58btc.decode((securedCredential.proof as Proof).proofValue!)
     const transformOptions = { proof: proofOptions, documentLoader: options.documentLoader }
 
-    const canonicalDocument = await core.transformRDFC(unsecuredCredential, transformOptions)
-    const canonicalProofConfig = await core.configRDFC(unsecuredCredential, transformOptions)
+    const canonicalDocument = await core.transformRdfc(unsecuredCredential, transformOptions)
+    const canonicalProofConfig = await core.configRdfc(unsecuredCredential, transformOptions)
     const hashData = await core.hash(canonicalDocument, canonicalProofConfig)
     const verified = await core.verify(hashData, proofBytes, transformOptions)
 

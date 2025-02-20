@@ -1,7 +1,7 @@
 import { assert, assertEquals } from "@std/assert"
 import { base58btc, type Credential, type Proof } from "@herculas/vc-data-integrity"
 
-import { configRDFC, hash, serialize, transformRDFC, verify } from "../src/suite/core.ts"
+import { configRdfc, hash, serialize, transformRdfc, verify } from "../src/suite/core.ts"
 import { EddsaRdfc2022 } from "../src/mod.ts"
 import { testLoader } from "./mock/loader.ts"
 import { EddsaJcs2022 } from "../src/suite/jcs.ts"
@@ -19,8 +19,8 @@ Deno.test("EdDSA-RDFC-2022 document and proof hashing", async () => {
   const proofOptions = structuredClone(PROOF_OPTIONS_1.default) as Proof
 
   const transformOptions = { proof: proofOptions, documentLoader: testLoader }
-  const canonicalDocument = await transformRDFC(unsecuredCredential, transformOptions)
-  const canonicalProofConfig = await configRDFC(unsecuredCredential, transformOptions)
+  const canonicalDocument = await transformRdfc(unsecuredCredential, transformOptions)
+  const canonicalProofConfig = await configRdfc(unsecuredCredential, transformOptions)
 
   const hashData = await hash(canonicalDocument, canonicalProofConfig)
 
