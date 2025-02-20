@@ -27,7 +27,7 @@ export class EddsaJcs2022 extends Cryptosuite {
    *
    * In this suite, this value MUST be `eddsa-jcs-2022`.
    */
-  static override readonly cryptosuite: string = SUITE_CONSTANT.JCS
+  static override readonly cryptosuite: string = SUITE_CONSTANT.SUITE_JCS
 
   /**
    * Create a data integrity proof given an unsecured data document.

@@ -24,7 +24,7 @@ export class EddsaRdfc2022 extends Cryptosuite {
    *
    * In this suite, this value MUST be `eddsa-rdfc-2022`.
    */
-  static override readonly cryptosuite: string = SUITE_CONSTANT.RDFC
+  static override readonly cryptosuite: string = SUITE_CONSTANT.SUITE_RDFC
 
   /**
    * Create a data integrity proof given an unsecured data document.

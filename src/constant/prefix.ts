@@ -7,7 +7,7 @@
  *
  * @see https://www.w3.org/TR/cid/#Multikey
  */
-export const PUBLIC_KEY_MULTIBASE = new Uint8Array([0xed, 0x01])
+export const PUBLIC_KEY_MULTIBASE = "ed01"
 
 /**
  * The encoding of an Ed25519 secret key MUST start with the two-byte prefix `0x8026` (the varint expression of
@@ -18,60 +18,27 @@ export const PUBLIC_KEY_MULTIBASE = new Uint8Array([0xed, 0x01])
  *
  * @see https://www.w3.org/TR/cid/#Multikey
  */
-export const PRIVATE_KEY_MULTIBASE = new Uint8Array([0x80, 0x26])
+export const PRIVATE_KEY_MULTIBASE = "8026"
 
 /**
  * The DER prefix for an Ed25519 public key, which could be decomposed as follows:
  *
- *    - `0x30 0x2a`: `SEQUENCE` of 42 bytes
- *        - `0x30 0x05`: `SEQUENCE` of 5 bytes
- *            - `0x06 0x03 0x2b6570`: `OID` of 3 bytes, 1.3.101.112 (Ed25519)
- *        - `0x03 0x21`: `BIT STRING` of 33 bytes
- *            - `0x00`: Padding byte
- *            - ... Public key contents of 32 bytes
+ * - `302a`: `SEQUENCE` (42 bytes in total)
+ * - `3005`: `SEQUENCE` (5 bytes following)
+ * - `0603 2b6570`: `Object Identifier` (3 bytes, with content of 1.3.101.112, representing Ed25519)
+ * - `0321`: `BIT STRING` (33 bytes following, a byte for version and 32 bytes for public key)
+ * - `00`: Version 0
  */
-export const PUBLIC_KEY_DER = new Uint8Array([
-  0x30,
-  0x2a,
-  0x30,
-  0x05,
-  0x06,
-  0x03,
-  0x2b,
-  0x65,
-  0x70,
-  0x03,
-  0x21,
-  0x00,
-])
+export const PUBLIC_KEY_DER = "302a300506032b6570032100"
 
 /**
  * The DER prefix for an Ed25519 private key, which could be decomposed as follows:
  *
- *    - `0x30 0x2e`: `SEQUENCE` of 46 bytes
- *        - `0x02 0x01`: `INTEGER` of 1 byte
- *            - `0x00`: Padding byte
- *        - `0x30 0x05`: `SEQUENCE` of 5 bytes
- *            - `0x06 0x03 0x2b6570`: `OID` of 3 bytes, 1.3.101.112 (Ed25519)
- *        - `0x04 0x22`: `OCTET STRING` of 34 bytes
- *            - `0x04 0x20`: `OCTET STRING` of 32 bytes
- *                - ... Private key contents of 32 bytes
+ * - `302e`: `SEQUENCE` (46 bytes in total)
+ * - `020100`: `INTEGER` (1 byte for version, with value of 0x0)
+ * - `3005`: `SEQUENCE` (5 bytes following)
+ * - `0603 2b6570`: `Object Identifier` (3 bytes, with content of 1.3.101.112, representing Ed25519)
+ * - `0422`: `OCTET STRING` (34 bytes following)
+ * - `0420`: `OCTET STRING` (32 bytes following, representing the private key)
  */
-export const PRIVATE_KEY_DER = new Uint8Array([
-  0x30,
-  0x2e,
-  0x02,
-  0x01,
-  0x00,
-  0x30,
-  0x05,
-  0x06,
-  0x03,
-  0x2b,
-  0x65,
-  0x70,
-  0x04,
-  0x22,
-  0x04,
-  0x20,
-])
+export const PRIVATE_KEY_DER = "302e020100300506032b657004220420"

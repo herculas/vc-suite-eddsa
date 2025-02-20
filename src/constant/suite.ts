@@ -13,7 +13,7 @@ export const KEYPAIR_TYPE = "Ed25519VerificationKey2020"
 export const KEYPAIR_DOCUMENT_TYPE_MULTI = "Multikey"
 export const KEYPAIR_DOCUMENT_TYPE_JWK = "JsonWebKey"
 
-export const RDFC = "eddsa-rdfc-2022"
-export const JCS = "eddsa-jcs-2022"
+export const SUITE_RDFC = "eddsa-rdfc-2022"
+export const SUITE_JCS = "eddsa-jcs-2022"
 
 export const GENERAL_PROOF_TYPE = "DataIntegrityProof"

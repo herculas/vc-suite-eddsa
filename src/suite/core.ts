@@ -43,7 +43,10 @@ export async function transformRdfc(
   //    form.
   // 3. Return `canonicalDocument` as the transformed data document.
 
-  if (options.proof.type !== SUITE_CONSTANT.GENERAL_PROOF_TYPE || options.proof.cryptosuite !== SUITE_CONSTANT.RDFC) {
+  if (
+    options.proof.type !== SUITE_CONSTANT.GENERAL_PROOF_TYPE ||
+    options.proof.cryptosuite !== SUITE_CONSTANT.SUITE_RDFC
+  ) {
     throw new ProcessingError(
       ProcessingErrorCode.PROOF_TRANSFORMATION_ERROR,
       "suite/core#transformRDFC",
@@ -83,7 +86,10 @@ export function transformJcs(unsecuredDocument: Credential, options: {
   //    of the `unsecuredDocument`.
   // 3. Return `canonicalDocument` as the transformed data document.
 
-  if (options.proof.type !== SUITE_CONSTANT.GENERAL_PROOF_TYPE || options.proof.cryptosuite !== SUITE_CONSTANT.JCS) {
+  if (
+    options.proof.type !== SUITE_CONSTANT.GENERAL_PROOF_TYPE ||
+    options.proof.cryptosuite !== SUITE_CONSTANT.SUITE_JCS
+  ) {
     throw new ProcessingError(
       ProcessingErrorCode.PROOF_TRANSFORMATION_ERROR,
       "suite/core#transformJCS",
@@ -127,7 +133,7 @@ export async function configRdfc(
 
   const proofConfig = structuredClone(options.proof)
 
-  if (proofConfig.type !== SUITE_CONSTANT.GENERAL_PROOF_TYPE || proofConfig.cryptosuite !== SUITE_CONSTANT.RDFC) {
+  if (proofConfig.type !== SUITE_CONSTANT.GENERAL_PROOF_TYPE || proofConfig.cryptosuite !== SUITE_CONSTANT.SUITE_RDFC) {
     throw new ProcessingError(
       ProcessingErrorCode.PROOF_GENERATION_ERROR,
       "suite/core#configRDFC",
@@ -179,7 +185,7 @@ export function configJcs(options: {
 
   const proofConfig = structuredClone(options.proof)
 
-  if (proofConfig.type !== SUITE_CONSTANT.GENERAL_PROOF_TYPE || proofConfig.cryptosuite !== SUITE_CONSTANT.JCS) {
+  if (proofConfig.type !== SUITE_CONSTANT.GENERAL_PROOF_TYPE || proofConfig.cryptosuite !== SUITE_CONSTANT.SUITE_JCS) {
     throw new ProcessingError(
       ProcessingErrorCode.PROOF_GENERATION_ERROR,
       "suite/core#configJCS",

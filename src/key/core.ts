@@ -37,7 +37,9 @@ export async function generateRawKeypair(): Promise<CryptoKeyPair> {
  */
 export async function keyToMaterial(key: CryptoKey, flag: KeypairOptions.Flag): Promise<Uint8Array> {
   const keyFormat = flag === "private" ? SUITE_CONSTANT.PRIVATE_KEY_FORMAT : SUITE_CONSTANT.PUBLIC_KEY_FORMAT
-  const expectedDerPrefix = flag === "private" ? PREFIX_CONSTANT.PRIVATE_KEY_DER : PREFIX_CONSTANT.PUBLIC_KEY_DER
+  const expectedDerPrefix = format.hexToBytes(
+    flag === "private" ? PREFIX_CONSTANT.PRIVATE_KEY_DER : PREFIX_CONSTANT.PUBLIC_KEY_DER,
+  )
 
   const exportedKey = await crypto.subtle.exportKey(keyFormat, key)
   const derPrefix = new Uint8Array(exportedKey.slice(0, expectedDerPrefix.length))
@@ -63,7 +65,9 @@ export async function keyToMaterial(key: CryptoKey, flag: KeypairOptions.Flag): 
  */
 export async function materialToKey(material: Uint8Array, flag: KeypairOptions.Flag): Promise<CryptoKey> {
   const keyFormat = flag === "private" ? SUITE_CONSTANT.PRIVATE_KEY_FORMAT : SUITE_CONSTANT.PUBLIC_KEY_FORMAT
-  const derPrefix = flag === "private" ? PREFIX_CONSTANT.PRIVATE_KEY_DER : PREFIX_CONSTANT.PUBLIC_KEY_DER
+  const derPrefix = format.hexToBytes(
+    flag === "private" ? PREFIX_CONSTANT.PRIVATE_KEY_DER : PREFIX_CONSTANT.PUBLIC_KEY_DER,
+  )
 
   const buffer = format.concatenate(derPrefix, material)
 
@@ -85,9 +89,9 @@ export async function materialToKey(material: Uint8Array, flag: KeypairOptions.F
  * @returns {string} The multibase-encoded key string.
  */
 export function materialToMultibase(material: Uint8Array, flag: KeypairOptions.Flag): string {
-  const multibasePrefix = flag === "private"
-    ? PREFIX_CONSTANT.PRIVATE_KEY_MULTIBASE
-    : PREFIX_CONSTANT.PUBLIC_KEY_MULTIBASE
+  const multibasePrefix = format.hexToBytes(
+    flag === "private" ? PREFIX_CONSTANT.PRIVATE_KEY_MULTIBASE : PREFIX_CONSTANT.PUBLIC_KEY_MULTIBASE,
+  )
   const expectedLength = flag === "private" ? SUITE_CONSTANT.PRIVATE_KEY_LENGTH : SUITE_CONSTANT.PUBLIC_KEY_LENGTH
 
   if (material.length !== expectedLength) {
@@ -104,8 +108,7 @@ export function materialToMultibase(material: Uint8Array, flag: KeypairOptions.F
 
 /**
  * Decode a multibase encoded private or public key into a Uint8Array key material, and check the key material against
- * the prefix from the specification. It should be noted that if the key is a private key, the decoded key material is
- * a 64-octet array, where the first 32 octets denotes the private key and the last 32 octets denotes the public key.
+ * the prefix from the specification.
  *
  * @param {string} multibase A multibase-encoded private or public key string.
  * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
@@ -114,9 +117,9 @@ export function materialToMultibase(material: Uint8Array, flag: KeypairOptions.F
  */
 export function multibaseToMaterial(multibase: string, flag: KeypairOptions.Flag): Uint8Array {
   const key = base58btc.decode(multibase)
-  const expectedPrefix = flag === "private"
-    ? PREFIX_CONSTANT.PRIVATE_KEY_MULTIBASE
-    : PREFIX_CONSTANT.PUBLIC_KEY_MULTIBASE
+  const expectedPrefix = format.hexToBytes(
+    flag === "private" ? PREFIX_CONSTANT.PRIVATE_KEY_MULTIBASE : PREFIX_CONSTANT.PUBLIC_KEY_MULTIBASE,
+  )
 
   if (!expectedPrefix.every((value, index) => key[index] === value)) {
     throw new ImplementationError(
