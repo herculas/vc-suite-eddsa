@@ -46,13 +46,13 @@ export async function getJwkThumbprint(jwk: JWK): Promise<string> {
  *
  * The flowchart below briefly illustrates this export process:
  *
- *        keyToMaterial                  materialToMultibase                 keypairToMultibase
- *     ┌──────────────────> Key Material ─────────────────────> Multibase Key ───────────────────> Verification Method
- *     │                 (32-octet array)                  (base-58-btc string)
- * CryptoKey
- *     │                     keyToJwk                                          keypairToJwk
- *     └─────────────────────────────────────────────────────> JSON Web Key ─────────────────────> Verification Method
- *                                                              (JWKEC)
+ *        keyToMaterial                  materialToMultibase                        keypairToMultibase
+ *     ┌──────────────────> Key Material ─────────────────────> Multibase Key ──────────────────────────────┐
+ *     │                  (32-octet array)                  (base-58-btc string)                            │
+ * CryptoKey                                                                                       Verification Method
+ *     │                       keyToJwk                                               keypairToJwk          │
+ *     └─────────────────────────────────────────────────────> JSON Web Key ────────────────────────────────┘
+ *                                                               (JWKEC)
  */
 
 /**
@@ -294,13 +294,13 @@ export async function keypairToJwk(
  *
  * The flowchart below briefly illustrates this export process:
  *
- *                       multibaseToKeypair                 multibaseToMaterial               materialToKey
- *  Verification Method ────────────────────> Multibase Key ────────────────────> Key Material ─────────────> CryptoKey
- *  (Multibase within)                   (base-58-btc string)                  (32-octet array)
- *
- *                         jwkToKeypair                                       jwkToKey
- *  Verification Method ──────────────────> JSON Web Key ───────────────────────────────────────────────────> CryptoKey
- *     (JWK within)                           (JWKEC)
+ *                       multibaseToKeypair                  multibaseToMaterial                 materialToKey
+ *  Verification Method ────────────────────> Multibase Key ────────────────────> Key Material ─────────────────┐
+ *   (Multibase within)                   (base-58-btc string)                  (32-octet array)                │
+ *                                                                                                          CryptoKey
+ *                         jwkToKeypair                                           jwkToKey                      │
+ *  Verification Method ──────────────────> JSON Web Key ───────────────────────────────────────────────────────┘
+ *      (JWK within)                          (JWKEC)
  */
 
 /**
