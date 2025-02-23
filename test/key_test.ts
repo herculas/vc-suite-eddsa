@@ -9,8 +9,10 @@ import * as TEST_CID_DOCUMENT from "./mock/cid.json" with { type: "json" }
 Deno.test("fingerprint generation and verification", async () => {
   const keypair = new Ed25519Keypair()
   await keypair.initialize()
+
   const fingerprint = await keypair.generateFingerprint()
   const result = await keypair.verifyFingerprint(fingerprint)
+
   assert(result)
 })
 
@@ -40,8 +42,6 @@ Deno.test("Keypair export: encapsulated", async () => {
 
   const multibasePrivate = await keypair.export({ type: "Multikey", flag: "private" })
   const multibasePublic = await keypair.export({ type: "Multikey", flag: "public" })
-
-  console.log(jwkPrivate)
 
   assertExists(jwkPrivate)
   assertExists(jwkPublic)

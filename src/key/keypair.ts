@@ -45,7 +45,7 @@ export class Ed25519Keypair extends Keypair {
   }
 
   /**
-   * Initialize the Ed25519 keypair using the Web Crypto API, set the public and private key material.
+   * Initialize an Ed25519 keypair using the Web Crypto API, and set the public and private key material.
    */
   override async initialize() {
     const keypair = await core.generateRawKeypair()
@@ -135,12 +135,12 @@ export class Ed25519Keypair extends Keypair {
   }
 
   /**
-   * Import an Ed25519 keypair from a serialized verification method.
+   * Import an Ed25519 keypair from a verification method document.
    *
-   * @param {VerificationMethod} inputDocument A verification method fetched from an external source.
+   * @param {VerificationMethod} inputDocument A verification method document fetched from an external source.
    * @param {KeypairOptions.Import} [options] Options for keypair import.
    *
-   * @returns {Promise<Ed25519Keypair>} Resolve to a Ed25519 keypair instance.
+   * @returns {Promise<Ed25519Keypair>} Resolve to an Ed25519 keypair instance.
    */
   static override async import(
     inputDocument: VerificationMethod,
