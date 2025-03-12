@@ -1,5 +1,5 @@
 import { assert, assertEquals } from "@std/assert"
-import { base58btc, type Credential, type Proof } from "@herculas/vc-data-integrity"
+import { type Credential, multi, type Proof } from "@herculas/vc-data-integrity"
 
 import { configRdfc, hash, serialize, transformRdfc, verify } from "../src/suite/core.ts"
 import { EddsaRdfc2022 } from "../src/mod.ts"
@@ -41,7 +41,7 @@ Deno.test("EdDSA-RDFC-2022 proof creation", async () => {
   const proofBytes = await serialize(hexToBytes(hashData), transformOptions)
 
   assertEquals(
-    base58btc.encode(proofBytes),
+    multi.base58btc.encode(proofBytes),
     "z2YwC8z3ap7yx1nZYCg4L3j3ApHsF8kgPdSb5xoS1VR7vPG3F561B52hYnQF9iseabecm3ijx4K1FBTQsCZahKZme",
   )
 })
@@ -54,7 +54,7 @@ Deno.test("EdDSA-RDFC-2022 proof verification", async () => {
   const proofEncoded = "z2YwC8z3ap7yx1nZYCg4L3j3ApHsF8kgPdSb5xoS1VR7vPG3F561B52hYnQF9iseabecm3ijx4K1FBTQsCZahKZme"
 
   const hashData = hexToBytes(proofHash + documentHash)
-  const proofBytes = base58btc.decode(proofEncoded)
+  const proofBytes = multi.base58btc.decode(proofEncoded)
 
   const verifyOptions = { proof: proofOptions, documentLoader: testLoader }
   const result = await verify(hashData, proofBytes, verifyOptions)

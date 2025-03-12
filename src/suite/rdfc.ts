@@ -1,11 +1,11 @@
 import {
-  base58btc,
   type Credential,
   Cryptosuite,
   type JsonLdDocument,
-  type Loader,
+  type LoadDocumentCallback,
+  multi,
   type Proof,
-  type Result,
+  type Verification,
 } from "@herculas/vc-data-integrity"
 
 import * as core from "./core.ts"
@@ -40,7 +40,7 @@ export class EddsaRdfc2022 extends Cryptosuite {
     unsecuredDocument: JsonLdDocument,
     options: {
       proof: Proof
-      documentLoader: Loader
+      documentLoader: LoadDocumentCallback
     },
   ): Promise<Proof> {
     // Procedure:
@@ -64,7 +64,7 @@ export class EddsaRdfc2022 extends Cryptosuite {
     const hashData = await core.hash(canonicalDocument, canonicalProofConfig)
     const proofBytes = await core.serialize(hashData, options)
 
-    proof.proofValue = base58btc.encode(proofBytes)
+    proof.proofValue = multi.base58btc.encode(proofBytes)
     return proof
   }
 
@@ -81,9 +81,9 @@ export class EddsaRdfc2022 extends Cryptosuite {
   static override async verifyProof(
     securedDocument: JsonLdDocument,
     options: {
-      documentLoader: Loader
+      documentLoader: LoadDocumentCallback
     },
-  ): Promise<Result.Verification> {
+  ): Promise<Verification> {
     // Procedure:
     //
     // 1. Let `unsecuredDocument` be a copy of `securedDocument` with the `proof` property removed.
@@ -108,7 +108,7 @@ export class EddsaRdfc2022 extends Cryptosuite {
     const proofOptions = structuredClone(securedCredential.proof) as Proof
     delete proofOptions.proofValue
 
-    const proofBytes = base58btc.decode((securedCredential.proof as Proof).proofValue!)
+    const proofBytes = multi.base58btc.decode((securedCredential.proof as Proof).proofValue!)
     const transformOptions = { proof: proofOptions, documentLoader: options.documentLoader }
 
     const canonicalDocument = await core.transformRdfc(unsecuredCredential, transformOptions)

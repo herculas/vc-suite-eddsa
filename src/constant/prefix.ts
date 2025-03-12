@@ -1,4 +1,4 @@
-import type { KeypairOptions } from "@herculas/vc-data-integrity"
+import type { Flag } from "@herculas/vc-data-integrity"
 
 /**
  * The encoding of an Ed25519 public key MUST start with the two-byte prefix `0xed01` (the varint expression of `0xed`),
@@ -45,12 +45,12 @@ const PUBLIC_KEY_UNCOMPRESSED = "302a300506032b6570032100"
  */
 const PRIVATE_KEY_UNCOMPRESSED = "302e020100300506032b657004220420"
 
-export const MULTIBASE: Map<KeypairOptions.Flag, string> = new Map([
+export const MULTIBASE: Map<Flag, string> = new Map([
   ["public", PUBLIC_KEY_MULTIBASE],
   ["private", PRIVATE_KEY_MULTIBASE],
 ])
 
-export const DER: Map<KeypairOptions.Flag, string> = new Map([
+export const DER: Map<Flag, string> = new Map([
   ["public", PUBLIC_KEY_UNCOMPRESSED],
   ["private", PRIVATE_KEY_UNCOMPRESSED],
 ])

@@ -1,12 +1,11 @@
 import {
-  base58btc,
-  base64url,
+  type Flag,
   format,
   ImplementationError,
   ImplementationErrorCode,
   type JWK,
   type JWKEC,
-  type KeypairOptions,
+  multi,
   type VerificationMethodJwk,
   type VerificationMethodMultibase,
 } from "@herculas/vc-data-integrity"
@@ -35,7 +34,7 @@ export async function generateRawKeypair(): Promise<CryptoKeyPair> {
 export async function getJwkThumbprint(jwk: JWK): Promise<string> {
   const data = new TextEncoder().encode(JSON.stringify(jwk))
   const hash = await crypto.subtle.digest("SHA-256", data)
-  return base64url.encode(new Uint8Array(hash))
+  return multi.base64url.encode(new Uint8Array(hash))
 }
 
 /**
@@ -61,11 +60,11 @@ export async function getJwkThumbprint(jwk: JWK): Promise<string> {
  * arrays, where the DER prefixes are removed.
  *
  * @param {CryptoKey} key A `CryptoKey` instance.
- * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
+ * @param {Flag} flag The flag to determine if the key is private or public.
  *
  * @returns {Promise<Uint8Array>} Resolve to the key material.
  */
-export async function keyToMaterial(key: CryptoKey, flag: KeypairOptions.Flag): Promise<Uint8Array> {
+export async function keyToMaterial(key: CryptoKey, flag: Flag): Promise<Uint8Array> {
   const keyFormat = SUITE_CONSTANT.KEY_FORMAT.get(flag)
   const materialLength = SUITE_CONSTANT.KEY_MATERIAL_LENGTH.get(flag)
   const derPrefixHex = PREFIX_CONSTANT.DER.get(flag)
@@ -105,11 +104,11 @@ export async function keyToMaterial(key: CryptoKey, flag: KeypairOptions.Flag): 
  * Encode a key material into a multibase string.
  *
  * @param {Uint8Array} material The key material in `Uint8Array` format.
- * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
+ * @param {Flag} flag The flag to determine if the key is private or public.
  *
  * @returns {string} The multibase string representing the key material.
  */
-export function materialToMultibase(material: Uint8Array, flag: KeypairOptions.Flag): string {
+export function materialToMultibase(material: Uint8Array, flag: Flag): string {
   const multibasePrefixHex = PREFIX_CONSTANT.MULTIBASE.get(flag)
   const materialLength = SUITE_CONSTANT.KEY_MATERIAL_LENGTH.get(flag)
 
@@ -131,20 +130,20 @@ export function materialToMultibase(material: Uint8Array, flag: KeypairOptions.F
 
   const multibasePrefix = format.hexToBytes(multibasePrefixHex)
   const multibaseMaterial = format.concatenate(multibasePrefix, material)
-  return base58btc.encode(multibaseMaterial)
+  return multi.base58btc.encode(multibaseMaterial)
 }
 
 /**
  * Export an Ed25519 keypair instance into a verification method containing a keypair in multibase format.
  *
  * @param {Ed25519Keypair} keypair An Ed25519 keypair instance.
- * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
+ * @param {Flag} flag The flag to determine if the key is private or public.
  *
  * @returns {Promise<VerificationMethodMultibase>} Resolve to a verification method document containing a multibase key.
  */
 export async function keypairToMultibase(
   keypair: Ed25519Keypair,
-  flag: KeypairOptions.Flag,
+  flag: Flag,
 ): Promise<VerificationMethodMultibase> {
   // check the controller and identifier
   if (!keypair.controller || !keypair.id) {
@@ -204,11 +203,11 @@ export async function keypairToMultibase(
  * the key is private, the `d` field is included in the `JWKEC` instance.
  *
  * @param {CryptoKey} key A `CryptoKey` instance.
- * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
+ * @param {Flag} flag The flag to determine if the key is private or public.
  *
  * @returns {Promise<JWKEC>} Resolve to a `JWKEC` object representing a JSON Web Key.
  */
-export async function keyToJwk(key: CryptoKey, flag: KeypairOptions.Flag): Promise<JWKEC> {
+export async function keyToJwk(key: CryptoKey, flag: Flag): Promise<JWKEC> {
   const jwk = await crypto.subtle.exportKey("jwk", key)
 
   return {
@@ -228,13 +227,13 @@ export async function keyToJwk(key: CryptoKey, flag: KeypairOptions.Flag): Promi
  * Export an Ed25519 keypair instance into a verification method containing a keypair in `JWK` format.
  *
  * @param {Ed25519Keypair} keypair An Ed25519 keypair instance.
- * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
+ * @param {Flag} flag The flag to determine if the key is private or public.
  *
  * @returns {Promise<VerificationMethodJwk>} Resolve to a verification method document containing a JSON Web Key.
  */
 export async function keypairToJwk(
   keypair: Ed25519Keypair,
-  flag: KeypairOptions.Flag,
+  flag: Flag,
 ): Promise<VerificationMethodJwk> {
   // check the controller and identifier
   if (!keypair.controller || !keypair.id) {
@@ -348,12 +347,12 @@ export async function multibaseToKeypair(
  * against the multibase prefix according to the specification.
  *
  * @param {string} multibase A multibase private or public key string.
- * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
+ * @param {Flag} flag The flag to determine if the key is private or public.
  *
  * @returns {Uint8Array} The decoded key in `Uint8Array` format.
  */
-export function multibaseToMaterial(multibase: string, flag: KeypairOptions.Flag): Uint8Array {
-  const multibaseMaterial = base58btc.decode(multibase)
+export function multibaseToMaterial(multibase: string, flag: Flag): Uint8Array {
+  const multibaseMaterial = multi.base58btc.decode(multibase)
   const multibasePrefixHex = PREFIX_CONSTANT.MULTIBASE.get(flag)
   const materialLength = SUITE_CONSTANT.KEY_MATERIAL_LENGTH.get(flag)
 
@@ -389,11 +388,11 @@ export function multibaseToMaterial(multibase: string, flag: KeypairOptions.Flag
  * Recover an Ed25519 private or public key from the provided key material.
  *
  * @param {Uint8Array} material The 32-octet public or private key material in `Uint8Array` format.
- * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
+ * @param {Flag} flag The flag to determine if the key is private or public.
  *
  * @returns {Promise<CryptoKey>} Resolve to the recovered Ed25519 key in `CryptoKey` format.
  */
-export async function materialToKey(material: Uint8Array, flag: KeypairOptions.Flag): Promise<CryptoKey> {
+export async function materialToKey(material: Uint8Array, flag: Flag): Promise<CryptoKey> {
   const keyFormat = SUITE_CONSTANT.KEY_FORMAT.get(flag)
   const materialLength = SUITE_CONSTANT.KEY_MATERIAL_LENGTH.get(flag)
   const derPrefixHex = PREFIX_CONSTANT.DER.get(flag)
@@ -436,7 +435,7 @@ export async function jwkToKeypair(
 ): Promise<Ed25519Keypair> {
   const keypair = new Ed25519Keypair(verificationMethod.id, verificationMethod.controller, expires, revoked)
 
-  const innerImport = async (jwk: JWK, flag: KeypairOptions.Flag) => {
+  const innerImport = async (jwk: JWK, flag: Flag) => {
     let convertedJwk: JWKEC
     try {
       convertedJwk = jwk as JWKEC
@@ -477,11 +476,11 @@ export async function jwkToKeypair(
  * the key is private, the `d` field MUST be provided in the `jwk` input.
  *
  * @param {JWKEC} jwk An `JWKEC` object representing a JSON Web Key.
- * @param {KeypairOptions.Flag} flag The flag to determine if the key is private or public.
+ * @param {Flag} flag The flag to determine if the key is private or public.
  *
  * @returns {Promise<CryptoKey>} Resolve to a `CryptoKey` instance.
  */
-export async function jwkToKey(jwk: JWKEC, flag: KeypairOptions.Flag): Promise<CryptoKey> {
+export async function jwkToKey(jwk: JWKEC, flag: Flag): Promise<CryptoKey> {
   const defaultUsage = flag === "private" ? ["sign"] : ["verify"]
   const keyUsage = (jwk.key_ops || defaultUsage) as KeyUsage[]
   const secret = flag === "private" ? jwk.d : undefined

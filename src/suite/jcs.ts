@@ -1,14 +1,14 @@
 import {
-  base58btc,
   type Credential,
   Cryptosuite,
   instance,
   type JsonLdDocument,
-  type Loader,
+  type LoadDocumentCallback,
+  multi,
   ProcessingError,
   ProcessingErrorCode,
   type Proof,
-  type Result,
+  type Verification,
 } from "@herculas/vc-data-integrity"
 
 import * as core from "./core.ts"
@@ -43,7 +43,7 @@ export class EddsaJcs2022 extends Cryptosuite {
     unsecuredDocument: JsonLdDocument,
     options: {
       proof: Proof
-      documentLoader: Loader
+      documentLoader: LoadDocumentCallback
     },
   ): Promise<Proof> {
     // Procedure:
@@ -73,7 +73,7 @@ export class EddsaJcs2022 extends Cryptosuite {
     const hashData = await core.hash(canonicalDocument, canonicalProofConfig)
     const proofBytes = await core.serialize(hashData, options)
 
-    cloneProof.proofValue = base58btc.encode(proofBytes)
+    cloneProof.proofValue = multi.base58btc.encode(proofBytes)
     return cloneProof
   }
 
@@ -83,16 +83,16 @@ export class EddsaJcs2022 extends Cryptosuite {
    * @param {JsonLdDocument} securedDocument A secured data document to verify a proof for.
    * @param {object} options A set of options to use when verifying the proof.
    *
-   * @returns {Promise<Result.Verification>} Resolve to a verification result.
+   * @returns {Promise<Verification>} Resolve to a verification result.
    *
    * @see https://www.w3.org/TR/vc-di-eddsa/#verify-proof-eddsa-jcs-2022
    */
   static override async verifyProof(
     securedDocument: JsonLdDocument,
     options: {
-      documentLoader: Loader
+      documentLoader: LoadDocumentCallback
     },
-  ): Promise<Result.Verification> {
+  ): Promise<Verification> {
     // Procedure:
     //
     // 1. Let `unsecuredDocument` be a copy of `securedDocument` with the `proof` property removed.
@@ -123,7 +123,7 @@ export class EddsaJcs2022 extends Cryptosuite {
     const proofOptions = structuredClone(securedCredential.proof) as Proof
     delete proofOptions.proofValue
 
-    const proofBytes = base58btc.decode((securedCredential.proof as Proof).proofValue!)
+    const proofBytes = multi.base58btc.decode((securedCredential.proof as Proof).proofValue!)
 
     if (proofOptions["@context"]) {
       let proofContext = proofOptions["@context"]

@@ -3,7 +3,7 @@ import {
   document,
   format,
   jcs,
-  type Loader,
+  type LoadDocumentCallback,
   ProcessingError,
   ProcessingErrorCode,
   type Proof,
@@ -30,7 +30,7 @@ export async function transformRdfc(
   unsecuredDocument: Credential,
   options: {
     proof: Proof
-    documentLoader: Loader
+    documentLoader: LoadDocumentCallback
   },
 ): Promise<string> {
   // Procedure:
@@ -115,7 +115,7 @@ export async function configRdfc(
   unsecuredDocument: Credential,
   options: {
     proof: Proof
-    documentLoader: Loader
+    documentLoader: LoadDocumentCallback
   },
 ): Promise<string> {
   // Procedure:
@@ -251,7 +251,7 @@ export async function serialize(
   hashData: Uint8Array,
   options: {
     proof: Proof
-    documentLoader: Loader
+    documentLoader: LoadDocumentCallback
   },
 ): Promise<Uint8Array> {
   // Procedure:
@@ -295,7 +295,7 @@ export async function verify(
   proofBytes: Uint8Array,
   options: {
     proof: Proof
-    documentLoader: Loader
+    documentLoader: LoadDocumentCallback
   },
 ): Promise<boolean> {
   // Procedure:

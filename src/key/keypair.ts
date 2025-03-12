@@ -1,9 +1,10 @@
 import {
   document,
+  type Export,
   ImplementationError,
   ImplementationErrorCode,
+  type Import,
   Keypair,
-  type KeypairOptions,
   loader,
   type URI,
   VC_BASE_URL,
@@ -92,11 +93,11 @@ export class Ed25519Keypair extends Keypair {
   /**
    * Export the serialized representation of the keypair, along with other metadata which can be used to form a proof.
    *
-   * @param {KeypairOptions.Export} [options] The options to export the keypair.
+   * @param {Export} [options] The options to export the keypair.
    *
    * @returns {Promise<VerificationMethod>} Resolve to a verification method containing the serialized keypair.
    */
-  override export(options?: KeypairOptions.Export): Promise<VerificationMethod> {
+  override export(options?: Export): Promise<VerificationMethod> {
     // set default options
     options ||= {}
     options.flag ||= "public"
@@ -138,13 +139,13 @@ export class Ed25519Keypair extends Keypair {
    * Import an Ed25519 keypair from a verification method document.
    *
    * @param {VerificationMethod} inputDocument A verification method document fetched from an external source.
-   * @param {KeypairOptions.Import} [options] Options for keypair import.
+   * @param {Import} [options] Options for keypair import.
    *
    * @returns {Promise<Ed25519Keypair>} Resolve to an Ed25519 keypair instance.
    */
   static override async import(
     inputDocument: VerificationMethod,
-    options?: KeypairOptions.Import,
+    options?: Import,
   ): Promise<Ed25519Keypair> {
     // set default options
     options ||= {}
