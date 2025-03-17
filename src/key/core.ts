@@ -39,9 +39,9 @@ export async function getJwkThumbprint(jwk: JWK): Promise<string> {
 
 /**
  * Export a `CryptoKey` instance to a verification method document. The key is stored in the exported document in either
- * `JWK` or `multibase` format, specified by the `type` field in the document. The `multibase` or `JWK` generated from
- * the above process will ultimately be wrapped into a verification method document, along with other metadata
- * associated with that key, such as the controller, identifier, and expiration date.
+ * `JsonWebKey` or `Multikey` format, specified by the `type` field in the document. The `JsonWebKey` or `Multikey` 
+ * generated from the above process will ultimately be wrapped into a verification method document, along with other 
+ * metadata associated with that key, such as the controller, identifier, and expiration date.
  *
  * The flowchart below briefly illustrates this export process:
  *
@@ -134,12 +134,13 @@ export function materialToMultibase(material: Uint8Array, flag: Flag): string {
 }
 
 /**
- * Export an Ed25519 keypair instance into a verification method containing a keypair in multibase format.
+ * Export an Ed25519 keypair instance into a verification method containing a keypair in `Multikey` format.
  *
  * @param {Ed25519Keypair} keypair An Ed25519 keypair instance.
  * @param {Flag} flag The flag to determine if the key is private or public.
  *
- * @returns {Promise<VerificationMethodMultibase>} Resolve to a verification method document containing a multibase key.
+ * @returns {Promise<VerificationMethodMultibase>} Resolve to a verification method document containing a `Multikey`
+ * keypair.
  */
 export async function keypairToMultibase(
   keypair: Ed25519Keypair,
@@ -288,8 +289,8 @@ export async function keypairToJwk(
 }
 
 /**
- * Import a verification method document into a CryptoKey instance. The key is stored in the verification method
- * document in either JWK or multibase format, as specified by the type field in the document.
+ * Import a verification method document into a `CryptoKey` instance. The key is stored in the verification method
+ * document in either `JsonWebKey` or `Multikey` format, as specified by the type field in the document.
  *
  * The flowchart below briefly illustrates this export process:
  *
@@ -303,7 +304,7 @@ export async function keypairToJwk(
  */
 
 /**
- * Import an Ed25519 keypair from a verification method document containing a keypair in multibase format.
+ * Import an Ed25519 keypair from a verification method document containing a keypair in `Multikey` format.
  *
  * @param {VerificationMethodMultibase} verificationMethod A verification method fetched from an external source.
  * @param {Date} [revoked] The expiration date of the keypair.
